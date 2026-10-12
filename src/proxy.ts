@@ -9,7 +9,7 @@ function getEncryptionKey(): Uint8Array {
   return new TextEncoder().encode(secret.padEnd(32, "!").slice(0, 32));
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
 
@@ -47,7 +47,9 @@ export async function middleware(request: NextRequest) {
       const secretKey = getEncryptionKey();
       const { payload } = await jwtDecrypt(sessionCookie, secretKey);
       if (payload?.sub) {
-        return NextResponse.redirect(new URL("/", request.url));
+        return NextResponse.redirect(
+          new URL(payload.role === "admin" ? "/admin" : "/", request.url)
+        );
       }
     } catch {
       // Ignore invalid cookie and allow reaching login

@@ -216,8 +216,9 @@ export async function getProductBySlug(slug: string) {
   return unstable_cache(
     async () => {
       try {
-        const product = await db.query.products.findFirst({
-          where: and(eq(products.slug, slug), eq(products.status, "active")),
+        const cleanSlug = slug.trim().toLowerCase();
+        let product = await db.query.products.findFirst({
+          where: and(eq(products.slug, cleanSlug), eq(products.status, "active")),
           with: {
             category: true,
             media: {
@@ -227,6 +228,29 @@ export async function getProductBySlug(slug: string) {
             secondHandDetails: true,
           },
         });
+
+        if (!product) {
+          // Secondary fallback match by SKU or partial slug
+          product = await db.query.products.findFirst({
+            where: and(
+              or(
+                eq(products.sku, cleanSlug.toUpperCase()),
+                ilike(products.slug, `%${cleanSlug}%`),
+                ilike(products.name, `%${cleanSlug.replace(/-/g, " ")}%`)
+              ),
+              eq(products.status, "active")
+            ),
+            with: {
+              category: true,
+              media: {
+                orderBy: [asc(productMedia.displayOrder)],
+              },
+              specifications: true,
+              secondHandDetails: true,
+            },
+          });
+        }
+
         return product || null;
       } catch (error) {
         console.error("[Get Product By Slug Error]:", error);
@@ -235,7 +259,7 @@ export async function getProductBySlug(slug: string) {
     },
     [`product-${slug}`],
     {
-      revalidate: 60,
+      revalidate: 10,
       tags: ["catalog", `product-${slug}`],
     }
   )();

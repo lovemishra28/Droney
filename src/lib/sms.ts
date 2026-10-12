@@ -41,6 +41,20 @@ export async function sendOtpSms(
     return { success: false, error: "Invalid 10-digit Indian phone number" };
   }
 
+  // Development-only transport bypass. The OTP is still generated, hashed, and
+  // stored in Redis by the normal OTP service; only SMS delivery is skipped.
+  // Remove this branch when the production Fast2SMS credentials are configured.
+  if (env.NODE_ENV === "development") {
+    console.info(
+      `[Development OTP] ${otpCode} for +91${sanitizedPhone} (expires in 5 minutes)`
+    );
+    return {
+      success: true,
+      messageId: "development-terminal-otp",
+    };
+  }
+
+  // Production delivery remains through Fast2SMS DLT.
   try {
     const payload = {
       route: "dlt",
@@ -51,7 +65,7 @@ export async function sendOtpSms(
       numbers: sanitizedPhone,
     };
 
-    const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+    const response = await fetch(env.FAST2SMS_API_URL, {
       method: "POST",
       headers: {
         authorization: env.FAST2SMS_API_KEY,

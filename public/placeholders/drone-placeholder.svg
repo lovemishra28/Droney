@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Drone image unavailable</title>
+  <desc id="desc">Placeholder illustration shown when a drone image is unavailable.</desc>
+  <rect width="1200" height="675" fill="#09090b"/>
+  <g fill="none" stroke="#52525b" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke-width="14" d="M420 330h360M500 275l-80-80m280 80 80-80M500 385l-80 80m280-80 80 80"/>
+    <circle cx="340" cy="175" r="44" stroke-width="10"/>
+    <circle cx="860" cy="175" r="44" stroke-width="10"/>
+    <circle cx="340" cy="500" r="44" stroke-width="10"/>
+    <circle cx="860" cy="500" r="44" stroke-width="10"/>
+    <rect x="480" y="270" width="240" height="120" rx="28" stroke-width="12"/>
+    <path stroke-width="10" d="M560 390v48h80v-48"/>
+  </g>
+  <text x="600" y="595" fill="#a1a1aa" font-family="Arial, sans-serif" font-size="28" text-anchor="middle">Drone image unavailable</text>
+</svg>

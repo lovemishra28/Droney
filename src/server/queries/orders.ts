@@ -1,6 +1,6 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { orderItems, orders, productMedia, products } from "@/lib/db/schema";
+import { orders, productMedia } from "@/lib/db/schema";
 import { getCurrentSession } from "@/server/services/session";
 
 /**
@@ -53,7 +53,12 @@ export async function getUserOrders() {
 
   try {
     return await db.query.orders.findMany({
-      where: eq(orders.userId, session.sub),
+      // An order is customer-visible only after the customer submits a UTR.
+      // The initial checkout row is only a temporary inventory/payment attempt.
+      where: and(
+        eq(orders.userId, session.sub),
+        isNotNull(orders.upiTransactionId)
+      ),
       orderBy: [desc(orders.createdAt)],
       with: {
         items: true,

@@ -1,9 +1,11 @@
 import React from "react";
+import Link from "next/link";
 import { desc } from "drizzle-orm";
-import { Package } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 import { db } from "@/lib/db";
-import { productMedia, products } from "@/lib/db/schema";
+import { products } from "@/lib/db/schema";
 import { requireAdminSession } from "@/server/queries/admin";
+import { resolveImageUrl } from "@/lib/media";
 import {
   ProductsDataTable,
   type AdminProductRow,
@@ -11,10 +13,24 @@ import {
 
 export const dynamic = "force-dynamic";
 
+type CatalogProduct = {
+  id: string;
+  sku: string;
+  name: string;
+  slug: string;
+  basePricePaise: number;
+  stockQuantity: number;
+  isSecondHand: boolean;
+  status: string;
+  category: { name: string } | null;
+  media: Array<{ url: string; mediaType: "image" | "video" }>;
+  secondHandDetails: { cosmeticGrade: "A" | "B" | "C" } | null;
+};
+
 export default async function AdminProductsPage() {
   await requireAdminSession();
 
-  let catalogList: any[] = [];
+  let catalogList: CatalogProduct[] = [];
   try {
     catalogList = await db.query.products.findMany({
       orderBy: [desc(products.createdAt)],
@@ -35,10 +51,10 @@ export default async function AdminProductsPage() {
   }
 
   const formattedRows: AdminProductRow[] = catalogList.map((p) => {
-    const primaryImg =
-      p.media?.find((m: any) => m.mediaType === "image")?.url ||
-      "/placeholders/drone-placeholder.webp";
-    const hasVid = p.media?.some((m: any) => m.mediaType === "video") ?? false;
+    const primaryImg = resolveImageUrl(
+      p.media?.find((m) => m.mediaType === "image")?.url
+    );
+    const hasVid = p.media?.some((m) => m.mediaType === "video") ?? false;
 
     return {
       id: p.id,
@@ -71,6 +87,13 @@ export default async function AdminProductsPage() {
             Browse and manage 500+ active hardware listings, adjust stock limits, and monitor pre-owned grades.
           </p>
         </div>
+        <Link
+          href="/admin/products/new"
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-xs font-bold text-zinc-950 transition-colors hover:bg-emerald-400"
+        >
+          <Plus className="h-4 w-4" />
+          Add New Product
+        </Link>
       </div>
 
       {/* Virtualized Interactive Table */}

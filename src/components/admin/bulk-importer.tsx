@@ -12,9 +12,11 @@ import {
 } from "lucide-react";
 import {
   bulkImportCatalogAction,
+} from "@/server/actions/bulk-import";
+import {
   bulkSkuRowSchema,
   type BulkSkuRow,
-} from "@/server/actions/bulk-import";
+} from "@/lib/validations/catalog";
 
 interface RowValidationError {
   rowNumber: number;

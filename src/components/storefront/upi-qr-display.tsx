@@ -103,6 +103,10 @@ export function UpiQrDisplay({
       <p className="mt-3 text-center text-xs text-zinc-400">
         Scan using any UPI App (Google Pay, PhonePe, Paytm, BHIM, Cred)
       </p>
+      <p className="mt-2 max-w-sm text-center text-xs font-medium text-amber-300">
+        Scanning only opens your UPI payment screen. Your order is not submitted
+        until you complete the payment and enter the 12-digit UTR below.
+      </p>
 
       {/* Mobile UPI App Deep Link Intent */}
       <div className="mt-5 w-full sm:hidden">

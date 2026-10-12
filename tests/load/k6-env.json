@@ -1,5 +1,5 @@
 {
-  "BASE_URL": "https://staging.yourdronestore.in",
+  "BASE_URL": "",
   "TEST_TARGET_PRODUCT_ID": "00000000-0000-0000-0000-000000000001",
   "TEST_TARGET_SLUG": "aerox-5-freestyle-bnf-grade-a",
   "AUTH_BEARER_TOKEN": "YOUR_STAGING_SESSION_TOKEN"

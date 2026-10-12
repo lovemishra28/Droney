@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Check, Plus, ShoppingBag } from "lucide-react";
 import { formatINR } from "@/lib/utils";
-import { useCartStore } from "@/stores/cart-store";
+import { isValidProductId, useCartStore } from "@/stores/cart-store";
 
 interface StickyPurchaseBarProps {
   product: {
@@ -22,7 +22,8 @@ export function StickyPurchaseBar({ product }: StickyPurchaseBarProps) {
   const [addedRecently, setAddedRecently] = useState(false);
 
   const isInCart = items.some((i) => i.productId === product.id);
-  const isAvailable = product.stockQuantity > 0;
+  const isAvailable =
+    product.stockQuantity > 0 && isValidProductId(product.id);
 
   const handleAddToCart = () => {
     if (!isAvailable) return;

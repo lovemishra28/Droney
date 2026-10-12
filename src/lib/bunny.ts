@@ -1,8 +1,6 @@
 import crypto from "node:crypto";
 import { env } from "@/lib/env";
 
-const BUNNY_API_BASE = "https://video.bunnycdn.com";
-
 export interface BunnyVideoResponse {
   id: string;
   guid?: string;
@@ -38,7 +36,7 @@ export interface BunnyTusAuthCredentials {
 export async function createBunnyVideoEntry(
   title: string
 ): Promise<BunnyVideoResponse> {
-  const url = `${BUNNY_API_BASE}/library/${env.BUNNY_STREAM_LIBRARY_ID}/videos`;
+  const url = `${env.BUNNY_API_BASE_URL.replace(/\/$/, "")}/library/${env.BUNNY_STREAM_LIBRARY_ID}/videos`;
 
   const response = await fetch(url, {
     method: "POST",
@@ -84,7 +82,7 @@ export function generateBunnyTusAuth(
   return {
     videoId,
     libraryId: env.BUNNY_STREAM_LIBRARY_ID,
-    tusEndpoint: "https://video.bunnycdn.com/tusupload",
+    tusEndpoint: env.BUNNY_TUS_ENDPOINT_URL,
     authorizationSignature,
     authorizationExpire: expirationTimestamp,
     hlsPlaylistUrl,
@@ -97,7 +95,7 @@ export function generateBunnyTusAuth(
 export async function getBunnyVideoStatus(
   videoId: string
 ): Promise<BunnyVideoResponse> {
-  const url = `${BUNNY_API_BASE}/library/${env.BUNNY_STREAM_LIBRARY_ID}/videos/${videoId}`;
+  const url = `${env.BUNNY_API_BASE_URL.replace(/\/$/, "")}/library/${env.BUNNY_STREAM_LIBRARY_ID}/videos/${videoId}`;
 
   const response = await fetch(url, {
     method: "GET",
@@ -119,7 +117,7 @@ export async function getBunnyVideoStatus(
  * Permanently removes a video from the Bunny.net Stream library.
  */
 export async function deleteBunnyVideo(videoId: string): Promise<boolean> {
-  const url = `${BUNNY_API_BASE}/library/${env.BUNNY_STREAM_LIBRARY_ID}/videos/${videoId}`;
+  const url = `${env.BUNNY_API_BASE_URL.replace(/\/$/, "")}/library/${env.BUNNY_STREAM_LIBRARY_ID}/videos/${videoId}`;
 
   const response = await fetch(url, {
     method: "DELETE",

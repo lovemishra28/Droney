@@ -105,7 +105,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
             <div className="flex items-center gap-3">
               <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
                 <Image
-                  src={item.thumbnailUrl || "/placeholders/drone-placeholder.webp"}
+                  src={item.thumbnailUrl || "/placeholders/drone-placeholder.svg"}
                   alt={item.name}
                   fill
                   className="object-cover"

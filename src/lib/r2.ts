@@ -4,11 +4,11 @@ import { env } from "@/lib/env";
 
 /**
  * Cloudflare R2 S3-compatible client instance.
- * Uses Cloudflare account ID to construct the endpoint route.
+ * Uses the configured Cloudflare endpoint route.
  */
 export const r2Client = new S3Client({
   region: "auto",
-  endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: env.R2_S3_ENDPOINT,
   credentials: {
     accessKeyId: env.R2_ACCESS_KEY_ID,
     secretAccessKey: env.R2_SECRET_ACCESS_KEY,

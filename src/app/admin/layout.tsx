@@ -15,7 +15,7 @@ import { SessionWatcher } from "@/components/admin/session-watcher";
 import { logoutAction } from "@/server/actions/auth";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
-import { count, eq } from "drizzle-orm";
+import { and, count, eq, isNotNull } from "drizzle-orm";
 
 export default async function AdminLayout({
   children,
@@ -30,7 +30,12 @@ export default async function AdminLayout({
     const pendingApprovalsResult = await db
       .select({ total: count() })
       .from(orders)
-      .where(eq(orders.paymentStatus, "awaiting_verification"));
+      .where(
+        and(
+          eq(orders.paymentStatus, "awaiting_verification"),
+          isNotNull(orders.upiTransactionId)
+        )
+      );
 
     pendingApprovalsCount = pendingApprovalsResult[0]?.total ?? 0;
   } catch (error) {

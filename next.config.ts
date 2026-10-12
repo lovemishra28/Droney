@@ -1,12 +1,24 @@
 import type { NextConfig } from "next";
 
+const publicR2Domain = new URL(
+  process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN!
+);
+const publicBunnyDomain = new URL(
+  process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST!
+);
+const r2StorageHost = process.env.R2_STORAGE_HOST_PATTERN || "";
+const bunnyStorageHost = process.env.BUNNY_STORAGE_HOST_PATTERN || "";
+const supabaseHost = process.env.SUPABASE_HOST_PATTERN || "";
+const upstashHost = process.env.UPSTASH_HOST_PATTERN || "";
+const bunnyApiOrigin = process.env.BUNNY_API_ORIGIN || "";
+
 const ContentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline';
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://cdn.yourdronestore.in https://*.b-cdn.net https://video.yourdronestore.in https:;
-  media-src 'self' blob: https://*.b-cdn.net https://video.yourdronestore.in https:;
-  connect-src 'self' https://*.supabase.co https://*.upstash.io https://video.bunnycdn.com https://*.r2.cloudflarestorage.com;
+  img-src 'self' data: blob: ${r2StorageHost} ${process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || ""} ${bunnyStorageHost} ${process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST || ""} https:;
+  media-src 'self' blob: ${bunnyStorageHost} ${process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST || ""} https:;
+  connect-src 'self' ${supabaseHost} ${upstashHost} ${bunnyApiOrigin} ${r2StorageHost};
   font-src 'self' data:;
   object-src 'none';
   base-uri 'self';
@@ -66,19 +78,19 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**.r2.cloudflarestorage.com",
+        hostname: r2StorageHost,
+      },
+      {
+        protocol: publicR2Domain.protocol.replace(":", "") as "http" | "https",
+        hostname: publicR2Domain.hostname,
+      },
+      {
+        protocol: publicBunnyDomain.protocol.replace(":", "") as "http" | "https",
+        hostname: publicBunnyDomain.hostname,
       },
       {
         protocol: "https",
-        hostname: "cdn.yourdronestore.in",
-      },
-      {
-        protocol: "https",
-        hostname: "video.yourdronestore.in",
-      },
-      {
-        protocol: "https",
-        hostname: "**.b-cdn.net",
+        hostname: bunnyStorageHost,
       },
       {
         protocol: "https",

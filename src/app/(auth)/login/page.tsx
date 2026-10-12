@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Plane, ShieldCheck, ArrowRight } from "lucide-react";
+import { Plane, ArrowRight } from "lucide-react";
 import { requestOtp, verifyOtpAndLogin } from "@/server/actions/auth";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [identifier, setIdentifier] = useState("");
   const [fullName, setFullName] = useState("");
   const [otp, setOtp] = useState("");
@@ -21,8 +19,10 @@ export default function LoginPage() {
     try {
       await requestOtp(identifier);
       setStep("verify");
-    } catch (err: any) {
-      setError(err?.message || "Failed to send verification code");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to send verification code"
+      );
     } finally {
       setLoading(false);
     }
@@ -33,10 +33,17 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await verifyOtpAndLogin(identifier, otp, fullName);
-      router.push("/");
-    } catch (err: any) {
-      setError(err?.message || "Failed to verify code");
+      const result = await verifyOtpAndLogin(identifier, otp, fullName);
+      // Force a document navigation so the new HttpOnly session cookie is
+      // included before the proxy redirects authenticated /login requests.
+      const destination = result.data?.role === "admin" ? "/admin" : "/";
+      window.location.assign(
+        new URL(destination, window.location.origin).toString()
+      );
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to verify verification code"
+      );
     } finally {
       setLoading(false);
     }

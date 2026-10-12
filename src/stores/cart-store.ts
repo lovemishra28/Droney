@@ -17,6 +17,14 @@ export type AddCartItemInput = Omit<CartItem, "quantity" | "stockAvailable"> & {
   stockAvailable?: number;
 };
 
+export const productIdPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isValidProductId(productId: string): boolean {
+  if (!productId || typeof productId !== "string") return false;
+  return productIdPattern.test(productId) || productId.trim().length >= 8;
+}
+
 interface CartStoreState {
   items: CartItem[];
   isOpen: boolean;
@@ -40,6 +48,14 @@ export const useCartStore = create<CartStoreState>()(
       setIsOpen: (isOpen) => set({ isOpen }),
 
       addItem: (item, quantityOverride) => {
+        if (!isValidProductId(item.productId)) {
+          console.error(
+            "[Cart] Refused to add a product without a valid database ID:",
+            item.productId
+          );
+          return;
+        }
+
         const qty = quantityOverride ?? item.quantity ?? 1;
         const available = item.stockAvailable ?? 99;
         const currentItems = get().items;
@@ -128,6 +144,16 @@ export const useCartStore = create<CartStoreState>()(
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? localStorage : ({} as Storage)
       ),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<CartStoreState> | null;
+        return {
+          ...currentState,
+          ...persisted,
+          items: (persisted?.items || []).filter((item) =>
+            isValidProductId(item.productId)
+          ),
+        };
+      },
       partialize: (state) => ({ items: state.items }),
     }
   )

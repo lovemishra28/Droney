@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { eq, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -207,6 +208,11 @@ export async function logoutAction(): Promise<ActionResponse> {
     success: true,
     message: "Logged out successfully",
   };
+}
+
+export async function logoutAndRedirectAction(): Promise<void> {
+  await deleteSessionCookie();
+  redirect("/");
 }
 
 // Backward-compatible wrappers for client components

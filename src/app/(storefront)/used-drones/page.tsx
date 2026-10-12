@@ -41,7 +41,7 @@ export default async function UsedDronesPage({
         stockQuantity: 1,
         media: [
           {
-            url: "/placeholders/drone-placeholder.webp",
+            url: "/placeholders/drone-placeholder.svg",
             mediaType: "image" as const,
           },
         ],
@@ -68,7 +68,7 @@ export default async function UsedDronesPage({
         stockQuantity: 1,
         media: [
           {
-            url: "/placeholders/drone-placeholder.webp",
+            url: "/placeholders/drone-placeholder.svg",
             mediaType: "image" as const,
           },
         ],
@@ -95,7 +95,7 @@ export default async function UsedDronesPage({
         stockQuantity: 1,
         media: [
           {
-            url: "/placeholders/drone-placeholder.webp",
+            url: "/placeholders/drone-placeholder.svg",
             mediaType: "image" as const,
           },
         ],
@@ -123,134 +123,138 @@ export default async function UsedDronesPage({
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Hero Certification Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 p-6 sm:p-10">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-950/60 px-3 py-1 text-xs font-semibold text-amber-300">
-            <ShieldCheck className="h-4 w-4" />
-            <span>Certified Pre-Owned Drone Marketplace</span>
-          </div>
-
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-white sm:text-4xl">
-            Flight-Tested Drones with Verified Telemetry Logs
-          </h1>
-
-          <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-            Every pre-owned drone undergoes an 18-point technician bench test,
-            motor bearing inspection, and LiPo battery load test. Backed by
-            certified logs and direct binding support before shipment.
-          </p>
+    <div className="min-h-screen bg-white text-zinc-900 py-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-2 text-xs text-zinc-500 mb-4 font-medium">
+          <Link href="/" className="hover:text-black transition">Home</Link>
+          <span>/</span>
+          <span className="font-semibold text-black">Pre-Owned Fleet</span>
         </div>
 
-        {/* Inspection Grading Tiers Info Grid */}
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-3.5">
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
-              <Sparkles className="h-4 w-4" />
-              <span>Grade A (Mint Tier)</span>
-            </div>
-            <p className="mt-1 text-[11px] text-zinc-400">
-              Under 5 logged flight hours, spotless frame, zero component
-              repairs.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-3.5">
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Grade B (Operational)</span>
-            </div>
-            <p className="mt-1 text-[11px] text-zinc-400">
-              Minor cosmetic prop scuffs, factory electronics, under 20 battery
-              cycles.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-3.5">
-            <div className="flex items-center gap-2 text-xs font-semibold text-orange-400">
+        {/* Hero Certification Banner */}
+        <div className="relative overflow-hidden rounded-3xl bg-black text-white p-8 sm:p-12 shadow-lg mb-10">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold text-emerald-400 font-mono">
               <ShieldCheck className="h-4 w-4" />
-              <span>Grade C (Field-Tested)</span>
+              <span>ALTITUDE CERTIFIED PRE-OWNED FLEET</span>
             </div>
-            <p className="mt-1 text-[11px] text-zinc-400">
-              Certified refurbished motor arms/ESCs, full bench-tested
-              stability.
+
+            <h1 className="mt-5 text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+              Bench-Tested Drones with Verified Flight Logs
+            </h1>
+
+            <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+              Every pre-owned drone undergoes a 32-point technician bench inspection, motor bearing vibration analysis, and battery telemetry cycle check before dispatch.
             </p>
           </div>
+
+          {/* Inspection Grading Tiers Info Grid */}
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 font-mono">
+                <Sparkles className="h-4 w-4" />
+                <span>Grade A (Mint Tier)</span>
+              </div>
+              <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">
+                Under 5 logged flight hours, pristine airframe, zero crash or repair records.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-400 font-mono">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Grade B (Operational)</span>
+              </div>
+              <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">
+                Minor cosmetic prop scuffs, 100% factory original electronics, under 20 battery cycles.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-orange-400 font-mono">
+                <ShieldCheck className="h-4 w-4" />
+                <span>Grade C (Field-Tested)</span>
+              </div>
+              <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">
+                Refurbished arms/ESCs, passed complete autonomous GPS and stability flight test.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Grade Filter Tabs */}
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-4">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/used-drones"
-            className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
-              !selectedGrade
-                ? "bg-indigo-600 text-white"
-                : "bg-zinc-900 text-zinc-400 hover:text-zinc-100"
-            }`}
-          >
-            All Certified Units ({usedDrones.length})
-          </Link>
-
-          {(["A", "B", "C"] as const).map((grade) => (
-            <Link
-              key={grade}
-              href={`/used-drones?grade=${grade}`}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                selectedGrade === grade
-                  ? "bg-indigo-600 text-white"
-                  : "bg-zinc-900 text-zinc-400 hover:text-zinc-100"
-              }`}
-            >
-              Grade {grade}
-            </Link>
-          ))}
-        </div>
-
-        <span className="text-xs text-zinc-500">
-          Individual units sold on a first-come, first-served basis.
-        </span>
-      </div>
-
-      {/* Used Drones Grid */}
-      <div className="mt-8">
-        {usedDrones.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 p-12 text-center">
-            <ShieldCheck className="h-10 w-10 text-zinc-700" />
-            <p className="mt-3 text-base font-semibold text-zinc-300">
-              No certified pre-owned drones currently in this grading tier.
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              New technician-verified builds are inspected and posted weekly.
-            </p>
+        {/* Grade Filter Tabs */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 pb-5 mb-8">
+          <div className="flex items-center gap-2">
             <Link
               href="/used-drones"
-              className="mt-4 rounded-lg bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700"
+              className={`rounded-full px-4 py-2 text-xs font-bold transition-all shadow-xs ${
+                !selectedGrade
+                  ? "bg-black text-white"
+                  : "border border-zinc-200 bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
             >
-              View All Certified Drones
+              All Certified Units ({usedDrones.length})
             </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {usedDrones.map((item) => (
-              <UsedDroneCard
-                key={item.id}
-                product={{
-                  id: item.id,
-                  slug: item.slug,
-                  name: item.name,
-                  sku: item.sku,
-                  basePricePaise: item.basePricePaise,
-                  stockQuantity: item.stockQuantity,
-                  media: item.media,
-                  secondHandDetails: item.secondHandDetails,
-                }}
-              />
+
+            {(["A", "B", "C"] as const).map((grade) => (
+              <Link
+                key={grade}
+                href={`/used-drones?grade=${grade}`}
+                className={`rounded-full px-4 py-2 text-xs font-bold transition-all shadow-xs ${
+                  selectedGrade === grade
+                    ? "bg-black text-white"
+                    : "border border-zinc-200 bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                }`}
+              >
+                Grade {grade}
+              </Link>
             ))}
           </div>
-        )}
+
+          <span className="text-xs font-medium text-zinc-500 font-mono">
+            Direct UPI • 10-Minute Reservation Protection
+          </span>
+        </div>
+
+        {/* Used Drones Grid */}
+        <div>
+          {usedDrones.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/50 p-12 text-center">
+              <ShieldCheck className="h-10 w-10 text-zinc-400" />
+              <p className="mt-3 text-base font-bold text-black">
+                No certified pre-owned drones currently in this grading tier.
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                New technician-verified builds are inspected and posted weekly.
+              </p>
+              <Link
+                href="/used-drones"
+                className="mt-4 rounded-full bg-[#c8f33b] px-5 py-2 text-xs font-bold text-black hover:bg-[#b8e530] transition shadow-xs"
+              >
+                View All Certified Drones
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {usedDrones.map((item) => (
+                <UsedDroneCard
+                  key={item.id}
+                  product={{
+                    id: item.id,
+                    slug: item.slug,
+                    name: item.name,
+                    sku: item.sku,
+                    basePricePaise: item.basePricePaise,
+                    stockQuantity: item.stockQuantity,
+                    media: item.media,
+                    secondHandDetails: item.secondHandDetails,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

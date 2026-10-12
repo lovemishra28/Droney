@@ -3,7 +3,7 @@
 import crypto from "node:crypto";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { orderItems, orders, products, users } from "@/lib/db/schema";
+import { orderItems, orders, products } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { getCurrentSession } from "@/server/services/session";
 import { reserveInventoryForCheckout } from "@/server/services/inventory";
@@ -17,6 +17,22 @@ import {
 import { sendOtpSms } from "@/lib/sms";
 import { sendOtpEmail } from "@/lib/email";
 import type { ActionResponse } from "@/server/actions/auth";
+import { redis } from "@/lib/redis";
+
+const PENDING_CHECKOUT_TTL_SECONDS = 10 * 60;
+
+interface PendingCheckout {
+  userId: string;
+  totalAmountPaise: number;
+  shippingAddress: ShippingAddressInput;
+  items: Array<{
+    productId: string;
+    title: string;
+    quantity: number;
+    unitPricePaise: number;
+    isSecondHand: boolean;
+  }>;
+}
 
 export interface CheckoutInitResponse {
   orderReference: string;
@@ -143,33 +159,18 @@ export async function initiateCheckoutAction(
 
   const orderReference = generateOrderReference();
 
-  // 4. Record order in PostgreSQL (status: placed, payment: awaiting_verification)
-  await db.transaction(async (tx) => {
-    const [createdOrder] = await tx
-      .insert(orders)
-      .values({
-        orderReference,
-        userId: session.sub,
-        totalAmountPaise,
-        shippingAddress,
-        paymentMethod: "upi_qr",
-        paymentStatus: "awaiting_verification",
-        orderStatus: "placed",
-      })
-      .returning({ id: orders.id });
-
-    // Insert snapshot order items
-    for (const line of lineItemSnapshots) {
-      await tx.insert(orderItems).values({
-        orderId: createdOrder.id,
-        productId: line.productId,
-        quantity: line.quantity,
-        unitPricePaise: line.unitPricePaise,
-        title: line.title,
-        isSecondHand: line.isSecondHand,
-      });
-    }
-  });
+  // Keep the checkout attempt outside PostgreSQL until the customer submits a
+  // UTR. The Redis entry expires with the inventory reservation.
+  await redis.set(
+    `checkout:${orderReference}`,
+    {
+      userId: session.sub,
+      totalAmountPaise,
+      shippingAddress,
+      items: lineItemSnapshots,
+    } satisfies PendingCheckout,
+    { ex: PENDING_CHECKOUT_TTL_SECONDS }
+  );
 
   // 5. Construct NPCI-compliant UPI URI
   const amountInr = (totalAmountPaise / 100).toFixed(2);
@@ -221,7 +222,8 @@ export async function submitPaymentProofAction(
   const { orderReference, upiTransactionId, paymentScreenshotUrl } =
     parsed.data;
 
-  // 1. Fetch Order Record
+  // 1. Find a submitted/rejected order, or materialize the pending checkout
+  // only now that a valid UTR has been provided.
   const targetOrder = await db.query.orders.findFirst({
     where: eq(orders.orderReference, orderReference),
     with: {
@@ -230,9 +232,52 @@ export async function submitPaymentProofAction(
   });
 
   if (!targetOrder) {
+    const pendingCheckout = await redis.get<PendingCheckout>(
+      `checkout:${orderReference}`
+    );
+    if (!pendingCheckout || pendingCheckout.userId !== session.sub) {
+      return {
+        success: false,
+        message:
+          "This checkout has expired. Please start checkout again and submit the UTR before the 10-minute reservation ends.",
+      };
+    }
+
+    const createdOrder = await db.transaction(async (tx) => {
+      const [newOrder] = await tx
+        .insert(orders)
+        .values({
+          orderReference,
+          userId: session.sub,
+          totalAmountPaise: pendingCheckout.totalAmountPaise,
+          shippingAddress: pendingCheckout.shippingAddress,
+          paymentMethod: "upi_qr",
+          paymentStatus: "awaiting_verification",
+          upiTransactionId,
+          paymentScreenshotUrl: paymentScreenshotUrl || null,
+          orderStatus: "placed",
+        })
+        .returning();
+
+      for (const line of pendingCheckout.items) {
+        await tx.insert(orderItems).values({
+          orderId: newOrder.id,
+          productId: line.productId,
+          quantity: line.quantity,
+          unitPricePaise: line.unitPricePaise,
+          title: line.title,
+          isSecondHand: line.isSecondHand,
+        });
+      }
+      return newOrder;
+    });
+
+    await redis.del(`checkout:${orderReference}`);
     return {
-      success: false,
-      message: "Order reference not found.",
+      success: true,
+      message:
+        "Payment reference submitted successfully. Our team is verifying your transfer.",
+      data: { orderReference: createdOrder.orderReference },
     };
   }
 
@@ -275,9 +320,14 @@ export async function submitPaymentProofAction(
         updatedAt: new Date(),
       })
       .where(eq(orders.id, targetOrder.id));
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Catch PostgreSQL unique constraint violation on upi_transaction_id
-    if (error?.code === "23505") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
       return {
         success: false,
         message:

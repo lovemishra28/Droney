@@ -10,7 +10,7 @@ export default function StorefrontLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-100">
+    <div className="flex min-h-screen flex-col bg-white text-zinc-900 selection:bg-[#c8f33b] selection:text-black">
       <Header />
       <main className="flex-1 pb-16 md:pb-0">{children}</main>
       <CartSheet />

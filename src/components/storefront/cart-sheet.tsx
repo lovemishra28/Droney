@@ -50,9 +50,9 @@ export function CartSheet({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-indigo-400" />
-            <h2 className="text-lg font-semibold tracking-tight">Your Cart</h2>
-            <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
+            <ShoppingBag className="h-5 w-5 text-[#c8f33b]" />
+            <h2 className="text-lg font-bold tracking-tight text-white">Your Flight Bag</h2>
+            <span className="rounded-full bg-[#c8f33b] px-2 py-0.5 text-xs font-bold text-black">
               {items.length}
             </span>
           </div>
@@ -76,7 +76,7 @@ export function CartSheet({
               <button
                 type="button"
                 onClick={handleClose}
-                className="mt-2 text-xs font-semibold tracking-wider text-indigo-400 uppercase hover:underline"
+                className="mt-2 text-xs font-semibold tracking-wider text-[#c8f33b] uppercase hover:underline"
               >
                 Browse Catalog
               </button>
@@ -90,7 +90,7 @@ export function CartSheet({
                     <Image
                       src={
                         item.thumbnailUrl ||
-                        "/placeholders/drone-placeholder.webp"
+                        "/images/altitude-hero-bg.jpg"
                       }
                       alt={item.name}
                       fill
@@ -105,7 +105,7 @@ export function CartSheet({
                         <Link
                           href={`/product/${item.slug}`}
                           onClick={handleClose}
-                          className="line-clamp-1 text-sm font-medium transition-colors hover:text-indigo-400"
+                          className="line-clamp-1 text-sm font-medium text-white transition-colors hover:text-[#c8f33b]"
                         >
                           {item.name}
                         </Link>
@@ -185,7 +185,7 @@ export function CartSheet({
             <Link
               href="/checkout"
               onClick={handleClose}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-indigo-500"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#c8f33b] px-4 py-3.5 text-sm font-bold text-black shadow-lg transition-all hover:bg-[#b8e530] active:scale-95"
             >
               <span>Proceed to Checkout</span>
               <ArrowRight className="h-4 w-4" />

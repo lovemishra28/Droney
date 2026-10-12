@@ -12,6 +12,10 @@ export const env = createEnv({
     DIRECT_URL: z
       .string()
       .url("DIRECT_URL must be a valid PostgreSQL connection string"),
+    R2_S3_ENDPOINT: z.string().url(),
+    BUNNY_API_BASE_URL: z.string().url(),
+    BUNNY_TUS_ENDPOINT_URL: z.string().url(),
+    FAST2SMS_API_URL: z.string().url(),
 
     // Upstash Redis
     UPSTASH_REDIS_REST_URL: z.string().url(),
@@ -46,16 +50,21 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().url(),
+    NEXT_PUBLIC_MEDIA_MODE: z.enum(["local", "remote"]).default("local"),
     NEXT_PUBLIC_R2_PUBLIC_DOMAIN: z.string().url(),
     NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST: z.string().url(),
+    NEXT_PUBLIC_WHATSAPP_BUSINESS_URL: z.string().url(),
     NEXT_PUBLIC_CLIENT_UPI_ID: z.string().min(3).includes("@"),
     NEXT_PUBLIC_CLIENT_PAYEE_NAME: z.string().min(1),
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_MEDIA_MODE: process.env.NEXT_PUBLIC_MEDIA_MODE,
     NEXT_PUBLIC_R2_PUBLIC_DOMAIN: process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN,
     NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST:
       process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST,
+    NEXT_PUBLIC_WHATSAPP_BUSINESS_URL:
+      process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_URL,
     NEXT_PUBLIC_CLIENT_UPI_ID: process.env.NEXT_PUBLIC_CLIENT_UPI_ID,
     NEXT_PUBLIC_CLIENT_PAYEE_NAME: process.env.NEXT_PUBLIC_CLIENT_PAYEE_NAME,
   },

@@ -1,6 +1,6 @@
 import React from "react";
 import { CheckSquare, ShieldCheck } from "lucide-react";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { requireAdminSession } from "@/server/queries/admin";
@@ -11,13 +11,31 @@ import {
 
 export const dynamic = "force-dynamic";
 
+type PendingRecord = {
+  id: string;
+  orderReference: string;
+  totalAmountPaise: number;
+  upiTransactionId: string | null;
+  paymentScreenshotUrl: string | null;
+  createdAt: Date;
+  user: {
+    fullName: string;
+    phone: string | null;
+    email: string | null;
+  } | null;
+  items: Array<{ id: string }>;
+};
+
 export default async function AdminPaymentsPage() {
   await requireAdminSession();
 
-  let pendingRecords: any[] = [];
+  let pendingRecords: PendingRecord[] = [];
   try {
     pendingRecords = await db.query.orders.findMany({
-      where: eq(orders.paymentStatus, "awaiting_verification"),
+      where: and(
+        eq(orders.paymentStatus, "awaiting_verification"),
+        isNotNull(orders.upiTransactionId)
+      ),
       orderBy: [desc(orders.createdAt)],
       with: {
         user: {

@@ -6,9 +6,9 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AeroStore | Drones & High-Performance Components",
+  title: "Altitude | Aviation Tech & Premier Drone Engineering",
   description:
-    "Certified new and flight-tested pre-owned drones, ESCs, motors, and spares.",
+    "Find your next flight path with Altitude. Premier camera drones, certified refurbished models, and tuned FPV components built for every horizon.",
 };
 
 export default function RootLayout({

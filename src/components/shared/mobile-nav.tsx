@@ -18,11 +18,11 @@ export function MobileNav() {
   const itemCount = mounted ? getItemCount() : 0;
 
   return (
-    <div className="fixed right-0 bottom-0 left-0 z-40 flex h-16 items-center justify-around border-t border-zinc-800 bg-zinc-950/90 px-4 backdrop-blur-lg md:hidden">
+    <div className="fixed right-0 bottom-0 left-0 z-40 flex h-16 items-center justify-around border-t border-zinc-200 bg-white/95 px-4 backdrop-blur-lg md:hidden shadow-lg">
       <Link
         href="/"
-        className={`flex flex-col items-center gap-1 text-[11px] font-medium ${
-          pathname === "/" ? "text-indigo-400" : "text-zinc-400"
+        className={`flex flex-col items-center gap-1 text-[11px] font-medium transition ${
+          pathname === "/" ? "text-black font-bold" : "text-zinc-500 hover:text-black"
         }`}
       >
         <Home className="h-5 w-5" />
@@ -31,8 +31,8 @@ export function MobileNav() {
 
       <Link
         href="/catalog"
-        className={`flex flex-col items-center gap-1 text-[11px] font-medium ${
-          pathname.startsWith("/catalog") ? "text-indigo-400" : "text-zinc-400"
+        className={`flex flex-col items-center gap-1 text-[11px] font-medium transition ${
+          pathname.startsWith("/catalog") ? "text-black font-bold" : "text-zinc-500 hover:text-black"
         }`}
       >
         <Grid className="h-5 w-5" />
@@ -41,31 +41,30 @@ export function MobileNav() {
 
       <Link
         href="/used-drones"
-        className={`flex flex-col items-center gap-1 text-[11px] font-medium ${
+        className={`flex flex-col items-center gap-1 text-[11px] font-medium transition ${
           pathname.startsWith("/used-drones")
-            ? "text-amber-400"
-            : "text-zinc-400"
+            ? "text-black font-bold"
+            : "text-zinc-500 hover:text-black"
         }`}
       >
         <ShieldCheck className="h-5 w-5" />
-        <span>Used Gear</span>
+        <span>Pre-Owned</span>
       </Link>
 
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="relative flex flex-col items-center gap-1 text-[11px] font-medium text-zinc-400"
+      <Link
+        href="/cart"
+        className={`relative flex flex-col items-center gap-1 text-[11px] font-medium transition ${
+          pathname === "/cart" ? "text-black font-bold" : "text-zinc-500 hover:text-black"
+        }`}
       >
         <div className="relative">
           <ShoppingBag className="h-5 w-5" />
-          {itemCount > 0 && (
-            <span className="absolute -top-1.5 -right-2 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-indigo-600 text-[9px] font-bold text-white">
-              {itemCount}
-            </span>
-          )}
+          <span className="absolute -top-1.5 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#c8f33b] text-[10px] font-black text-black">
+            {itemCount}
+          </span>
         </div>
-        <span>Cart</span>
-      </button>
+        <span>Bag</span>
+      </Link>
     </div>
   );
 }

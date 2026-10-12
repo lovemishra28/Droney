@@ -1,7 +1,7 @@
-import { and, count, desc, eq, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, lte, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { auditLogs, orders, products, users } from "@/lib/db/schema";
+import { auditLogs, orders, products } from "@/lib/db/schema";
 import { getCurrentSession } from "@/server/services/session";
 
 /**
@@ -55,7 +55,12 @@ export async function getAdminOverviewMetrics(): Promise<AdminMetricsSummary> {
     const pendingApprovalsResult = await db
       .select({ total: count() })
       .from(orders)
-      .where(eq(orders.paymentStatus, "awaiting_verification"));
+      .where(
+        and(
+          eq(orders.paymentStatus, "awaiting_verification"),
+          isNotNull(orders.upiTransactionId)
+        )
+      );
 
     const pendingPaymentApprovalsCount = pendingApprovalsResult[0]?.total ?? 0;
 
@@ -77,6 +82,7 @@ export async function getAdminOverviewMetrics(): Promise<AdminMetricsSummary> {
 
     // 5. Recent 6 Orders
     const rawOrders = await db.query.orders.findMany({
+      where: isNotNull(orders.upiTransactionId),
       orderBy: [desc(orders.createdAt)],
       limit: 6,
       with: {

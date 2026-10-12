@@ -99,7 +99,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         category: { name: "BNF Drones", slug: "bnf-drones" },
         media: [
           {
-            url: "/placeholders/drone-placeholder.webp",
+            url: "/placeholders/drone-placeholder.svg",
             mediaType: "image" as const,
           },
         ],
@@ -115,7 +115,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         category: { name: "Motors", slug: "motors" },
         media: [
           {
-            url: "/placeholders/drone-placeholder.webp",
+            url: "/placeholders/drone-placeholder.svg",
             mediaType: "image" as const,
           },
         ],
@@ -132,7 +132,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         secondHandDetails: { cosmeticGrade: "A" },
         media: [
           {
-            url: "/placeholders/drone-placeholder.webp",
+            url: "/placeholders/drone-placeholder.svg",
             mediaType: "image" as const,
           },
         ],
@@ -148,7 +148,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         category: { name: "Flight Controllers", slug: "flight-controllers" },
         media: [
           {
-            url: "/placeholders/drone-placeholder.webp",
+            url: "/placeholders/drone-placeholder.svg",
             mediaType: "image" as const,
           },
         ],
@@ -157,93 +157,153 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     pagination.totalCount = products.length;
   }
 
+  let catalogTitle = "Hardware Fleet & Flight Spares";
+  let catalogSubtitle = `Showing ${pagination.totalCount} products across certified drone frames, ESCs, motors, and camera gear.`;
+  let categoryLabel = "";
+
+  if (categorySlug === "accessories") {
+    catalogTitle = "Aviation Accessories & Cinema Glass";
+    catalogSubtitle = `Showing ${pagination.totalCount} essential flight batteries, ND filters, rugged cases, and remote controllers.`;
+    categoryLabel = "Accessories";
+  } else if (categorySlug === "camera-drones") {
+    catalogTitle = "Flight Fleet & Camera Drones";
+    catalogSubtitle = `Showing ${pagination.totalCount} aerial cinematography platforms, 4K/60fps quadcopters, and dual-sensor drones.`;
+    categoryLabel = "Camera Drones";
+  } else if (categorySlug === "fpv-drones") {
+    catalogTitle = "FPV & Acro Racing Drones";
+    catalogSubtitle = `Showing ${pagination.totalCount} tuned acrobatic platforms and BNF quadcopters.`;
+    categoryLabel = "FPV Drones";
+  } else if (categorySlug === "motors") {
+    catalogTitle = "Motors, ESCs & Power Electronics";
+    catalogSubtitle = `Showing ${pagination.totalCount} high-efficiency brushless motors, titanium stacks, and ESC controllers.`;
+    categoryLabel = "Motors & ESCs";
+  } else if (categorySlug === "used-drones") {
+    catalogTitle = "Pre-Owned Certified Fleet";
+    catalogSubtitle = `Showing ${pagination.totalCount} inspected and flight-tested drones with warranty.`;
+    categoryLabel = "Pre-Owned Drones";
+  }
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header Banner */}
-      <div className="border-b border-zinc-800 pb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-100 sm:text-3xl">
-          Hardware Inventory & Component Catalog
-        </h1>
-        <p className="mt-2 text-sm text-zinc-400">
-          Showing {pagination.totalCount} products across certified drone
-          frames, ESCs, motors, and spares.
-        </p>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-4">
-        {/* Desktop Filter Sidebar */}
-        <div className="hidden lg:col-span-1 lg:block">
-          <Suspense
-            fallback={
-              <div className="w-full text-xs text-zinc-500">
-                Loading filters...
-              </div>
-            }
-          >
-            <FilterSidebar categories={categoriesFormatted} />
-          </Suspense>
-        </div>
-
-        {/* Product Grid & Pagination */}
-        <div className="lg:col-span-3">
-          {products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 p-12 text-center">
-              <p className="text-base font-semibold text-zinc-300">
-                No drone hardware matches your current filters.
-              </p>
-              <p className="mt-1 text-xs text-zinc-500">
-                Try clearing selected categories or price thresholds to browse
-                other items.
-              </p>
-              <Link
-                href="/catalog"
-                className="mt-4 rounded-lg bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700"
-              >
-                Reset Catalog Filters
-              </Link>
-            </div>
-          ) : (
+    <div className="min-h-screen bg-white text-zinc-900 py-10">
+      <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-2 text-xs text-zinc-500 mb-4 font-medium">
+          <Link href="/" className="hover:text-black transition">Home</Link>
+          <span>/</span>
+          <Link href="/catalog" className="hover:text-black transition">Hardware Catalog</Link>
+          {categoryLabel && (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {products.map((item) => (
-                  <ProductCard key={item.id} product={item} />
-                ))}
-              </div>
-
-              {/* Pagination Controls */}
-              {pagination.totalPages > 1 && (
-                <div className="mt-10 flex items-center justify-between border-t border-zinc-800/80 pt-4 text-xs text-zinc-400">
-                  <span>
-                    Page {pagination.page} of {pagination.totalPages}
-                  </span>
-
-                  <div className="flex items-center gap-2">
-                    {pagination.hasPrevPage && (
-                      <Link
-                        href={`/catalog?page=${pagination.page - 1}${
-                          categorySlug ? `&category=${categorySlug}` : ""
-                        }${sort ? `&sort=${sort}` : ""}`}
-                        className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-zinc-200 hover:border-zinc-700"
-                      >
-                        Previous
-                      </Link>
-                    )}
-
-                    {pagination.hasNextPage && (
-                      <Link
-                        href={`/catalog?page=${pagination.page + 1}${
-                          categorySlug ? `&category=${categorySlug}` : ""
-                        }${sort ? `&sort=${sort}` : ""}`}
-                        className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-zinc-200 hover:border-zinc-700"
-                      >
-                        Next
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              )}
+              <span>/</span>
+              <span className="font-semibold text-black">{categoryLabel}</span>
             </>
           )}
+        </div>
+
+        {/* Header Banner */}
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-zinc-200 pb-6 mb-8 gap-3">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-black">
+              {catalogTitle}
+            </h1>
+            <p className="mt-2 text-xs sm:text-sm text-zinc-500">
+              {catalogSubtitle}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/catalog?condition=new"
+              className={`rounded-full px-3.5 py-1 text-xs font-bold transition ${
+                condition === "new"
+                  ? "bg-black text-white"
+                  : "border border-zinc-200 bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              Brand New
+            </Link>
+            <Link
+              href="/used-drones"
+              className="rounded-full border border-zinc-200 bg-zinc-100 px-3.5 py-1 text-xs font-bold text-zinc-700 hover:bg-zinc-200 transition"
+            >
+              Pre-Owned
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+          {/* Desktop Filter Sidebar */}
+          <div className="hidden lg:col-span-1 lg:block">
+            <Suspense
+              fallback={
+                <div className="w-full text-xs text-zinc-500">
+                  Loading filters...
+                </div>
+              }
+            >
+              <FilterSidebar categories={categoriesFormatted} />
+            </Suspense>
+          </div>
+
+          {/* Product Grid & Pagination */}
+          <div className="lg:col-span-3">
+            {products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/50 p-12 text-center">
+                <p className="text-base font-bold text-black">
+                  No drone hardware matches your current filters.
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Try clearing selected categories or price thresholds to browse other items.
+                </p>
+                <Link
+                  href="/catalog"
+                  className="mt-5 rounded-full bg-[#c8f33b] px-5 py-2 text-xs font-bold text-black hover:bg-[#b8e530] transition shadow-xs"
+                >
+                  Reset Catalog Filters
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {products.map((item) => (
+                    <ProductCard key={item.id} product={item} />
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {pagination.totalPages > 1 && (
+                  <div className="mt-10 flex items-center justify-between border-t border-zinc-200 pt-5 text-xs text-zinc-600 font-medium">
+                    <span>
+                      Page {pagination.page} of {pagination.totalPages}
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      {pagination.hasPrevPage && (
+                        <Link
+                          href={`/catalog?page=${pagination.page - 1}${
+                            categorySlug ? `&category=${categorySlug}` : ""
+                          }${sort ? `&sort=${sort}` : ""}`}
+                          className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-black hover:bg-zinc-100 font-bold transition shadow-xs"
+                        >
+                          Previous
+                        </Link>
+                      )}
+
+                      {pagination.hasNextPage && (
+                        <Link
+                          href={`/catalog?page=${pagination.page + 1}${
+                            categorySlug ? `&category=${categorySlug}` : ""
+                          }${sort ? `&sort=${sort}` : ""}`}
+                          className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-black hover:bg-zinc-100 font-bold transition shadow-xs"
+                        >
+                          Next
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
