@@ -8,17 +8,41 @@ interface GenerateUpiOptions {
   note: string;
 }
 
+export function buildNpciUpiUri(params: {
+  payeeAddress: string;
+  payeeName: string;
+  amountInr: string;
+  transactionRef: string;
+  transactionNote: string;
+}): string {
+  const {
+    payeeAddress,
+    payeeName,
+    amountInr,
+    transactionRef,
+    transactionNote,
+  } = params;
+
+  const url = new URL("upi://pay");
+  url.searchParams.set("pa", payeeAddress);
+  url.searchParams.set("pn", payeeName);
+  url.searchParams.set("am", amountInr);
+  url.searchParams.set("tr", transactionRef);
+  url.searchParams.set("tn", transactionNote);
+  url.searchParams.set("cu", "INR");
+
+  return url.toString();
+}
+
 export function generateUpiString(options: GenerateUpiOptions): string {
   const { vpa, payeeName, amountInRupees, transactionRef, note } = options;
-  const params = new URLSearchParams({
-    pa: vpa,
-    pn: payeeName,
-    am: amountInRupees.toFixed(2),
-    cu: "INR",
-    tr: transactionRef,
-    tn: note,
+  return buildNpciUpiUri({
+    payeeAddress: vpa,
+    payeeName,
+    amountInr: amountInRupees.toFixed(2),
+    transactionRef,
+    transactionNote: note,
   });
-  return `upi://pay?${params.toString()}`;
 }
 
 export async function generateUpiQrDataUrl(upiString: string): Promise<string> {

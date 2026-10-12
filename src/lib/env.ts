@@ -30,7 +30,7 @@ export const env = createEnv({
 
     // Communication Gateways
     FAST2SMS_API_KEY: z.string().min(1),
-    FAST2SMS_SENDER_ID: z.string().max(6),
+    FAST2SMS_SENDER_ID: z.string().max(6).default("AEROIN"),
     FAST2SMS_DLT_TEMPLATE_ID: z.string().min(1),
     RESEND_API_KEY: z.string().startsWith("re_"),
     EMAIL_FROM_ADDRESS: z.string().email(),
@@ -42,6 +42,7 @@ export const env = createEnv({
     OTP_SECRET_SALT: z
       .string()
       .min(16, "OTP_SECRET_SALT must be at least 16 characters long"),
+    CRON_SECRET: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().url(),

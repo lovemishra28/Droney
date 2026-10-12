@@ -54,9 +54,29 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  // Edge micro-cache: 60s cache at edge, 300s stale-while-revalidate background refresh
+  if (
+    pathname.startsWith("/catalog") ||
+    pathname.startsWith("/product/") ||
+    pathname === "/"
+  ) {
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=300"
+    );
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/login"],
+  matcher: [
+    "/admin/:path*",
+    "/login",
+    "/catalog",
+    "/product/:path*",
+    "/",
+  ],
 };

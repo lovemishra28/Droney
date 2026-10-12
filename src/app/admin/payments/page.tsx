@@ -1,42 +1,74 @@
-import { UtrApprovalCard } from "@/components/admin/utr-approval-card";
+import React from "react";
+import { CheckSquare, ShieldCheck } from "lucide-react";
+import { desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { orders } from "@/lib/db/schema";
+import { requireAdminSession } from "@/server/queries/admin";
+import {
+  PaymentApprovalTable,
+  type PendingOrderApproval,
+} from "@/components/admin/payment-approval-table";
 
-export default function AdminPaymentsPage() {
-  const pendingUtrs = [
-    {
-      orderId: "ord-1",
-      orderReference: "ORD-82914",
-      amountPaise: 2899900,
-      utrNumber: "409823145672",
-      screenshotUrl: null,
-      adminId: "admin-master",
-    },
-    {
-      orderId: "ord-2",
-      orderReference: "ORD-93011",
-      amountPaise: 470000,
-      utrNumber: "409877651239",
-      screenshotUrl: null,
-      adminId: "admin-master",
-    },
-  ];
+export const dynamic = "force-dynamic";
+
+export default async function AdminPaymentsPage() {
+  await requireAdminSession();
+
+  let pendingRecords: any[] = [];
+  try {
+    pendingRecords = await db.query.orders.findMany({
+      where: eq(orders.paymentStatus, "awaiting_verification"),
+      orderBy: [desc(orders.createdAt)],
+      with: {
+        user: {
+          columns: { fullName: true, phone: true, email: true },
+        },
+        items: {
+          columns: { id: true },
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[Admin Payments DB Error]:", error);
+  }
+
+  const formattedApprovals: PendingOrderApproval[] = pendingRecords.map((ord) => ({
+    id: ord.id,
+    orderReference: ord.orderReference,
+    customerName: ord.user?.fullName || "Guest Customer",
+    customerPhone: ord.user?.phone || null,
+    customerEmail: ord.user?.email || null,
+    totalAmountPaise: ord.totalAmountPaise,
+    upiTransactionId: ord.upiTransactionId,
+    paymentScreenshotUrl: ord.paymentScreenshotUrl,
+    createdAt: ord.createdAt ? new Date(ord.createdAt).toISOString() : new Date().toISOString(),
+    itemCount: ord.items?.length || 0,
+  }));
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-100">
-          Direct UPI Verification Queue
-        </h1>
-        <p className="mt-1 text-xs text-zinc-400">
-          Match submitted 12-digit bank UTR numbers against incoming merchant
-          account statements.
-        </p>
+    <div className="space-y-6">
+      {/* Workspace Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <CheckSquare className="h-5 w-5 text-emerald-400" />
+            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+              Direct UPI Payment Approvals
+            </h1>
+          </div>
+          <p className="mt-1 text-xs text-zinc-400">
+            Verify submitted 12-digit UTR codes against your bank statement before authorizing order dispatch.
+          </p>
+        </div>
+
+        <div className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs text-zinc-300">
+          <ShieldCheck className="h-4 w-4 text-indigo-400" />
+          <span>Zero Gateway Intermediary Mode Active</span>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        {pendingUtrs.map((utr) => (
-          <UtrApprovalCard key={utr.orderId} {...utr} />
-        ))}
-      </div>
+      {/* Approvals Table */}
+      <PaymentApprovalTable orders={formattedApprovals} />
     </div>
   );
 }

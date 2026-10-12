@@ -1,16 +1,5 @@
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  gte,
-  ilike,
-  inArray,
-  lte,
-  or,
-  sql,
-} from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   categories,
@@ -19,22 +8,19 @@ import {
   products,
   secondHandDetails,
 } from "@/lib/db/schema";
-
-// ============================================================================
-// 1. QUERY PARAMS & TYPE CONTRACTS
-// ============================================================================
+import { getCachedOrFetch } from "@/lib/cache";
 
 export interface CatalogFilterParams {
   page?: number;
   pageSize?: number;
   categorySlug?: string;
-  search?: string;
+  isSecondHand?: boolean;
   minPricePaise?: number;
   maxPricePaise?: number;
-  isSecondHand?: boolean;
+  search?: string;
+  sortBy?: "price_asc" | "price_desc" | "newest";
   cosmeticGrades?: ("A" | "B" | "C")[];
   motorKv?: string;
-  sortBy?: "price_asc" | "price_desc" | "newest";
 }
 
 export interface PaginatedResult<T> {
@@ -49,51 +35,71 @@ export interface PaginatedResult<T> {
   };
 }
 
-// ============================================================================
-// 2. PAGINATED CATALOG & FACETED SEARCH
-// ============================================================================
+/**
+ * Retrieves the full category taxonomy.
+ * Cached at the edge with Next.js ISR (revalidate: 300) and Redis (TTL: 300).
+ */
+export const getCatalogCategories = unstable_cache(
+  async () => {
+    return getCachedOrFetch(
+      "catalog:categories:tree",
+      async () => {
+        try {
+          return await db.query.categories.findMany({
+            orderBy: [asc(categories.name)],
+            with: {
+              products: {
+                where: eq(products.status, "active"),
+                columns: { id: true },
+              },
+            },
+          });
+        } catch (error) {
+          console.error("[Catalog Categories Query Error]:", error);
+          return [];
+        }
+      },
+      { ttlSeconds: 300 }
+    );
+  },
+  ["catalog-categories"],
+  {
+    revalidate: 300,
+    tags: ["catalog", "categories"],
+  }
+);
 
 /**
- * Retrieves paginated products with faceted edge filtering across technical specs,
- * categories, price ranges, and condition grades.
+ * Retrieves paginated catalog products with multi-condition filtering.
  */
 export async function getProducts(params: CatalogFilterParams = {}) {
   const {
     page = 1,
     pageSize = 24,
     categorySlug,
-    search,
+    isSecondHand,
     minPricePaise,
     maxPricePaise,
-    isSecondHand,
+    search,
+    sortBy = "newest",
     cosmeticGrades,
     motorKv,
-    sortBy = "newest",
   } = params;
 
   const offset = (page - 1) * pageSize;
 
-  // Resolve categoryId if categorySlug is provided
-  let targetCategoryId: string | undefined;
-  if (categorySlug) {
-    const matchedCategory = await db.query.categories.findFirst({
-      where: eq(categories.slug, categorySlug),
-      columns: { id: true },
-    });
-    if (matchedCategory) {
-      targetCategoryId = matchedCategory.id;
-    }
-  }
-
-  // Build composite WHERE conditions
   const conditions = [eq(products.status, "active")];
-
-  if (targetCategoryId) {
-    conditions.push(eq(products.categoryId, targetCategoryId));
-  }
 
   if (typeof isSecondHand === "boolean") {
     conditions.push(eq(products.isSecondHand, isSecondHand));
+  }
+
+  if (minPricePaise !== undefined) {
+    conditions.push(gte(products.basePricePaise, minPricePaise));
+  }
+
+  if (maxPricePaise !== undefined) {
+    conditions.push(lte(products.basePricePaise, maxPricePaise));
   }
 
   if (search && search.trim().length > 0) {
@@ -107,115 +113,136 @@ export async function getProducts(params: CatalogFilterParams = {}) {
     );
   }
 
-  if (typeof minPricePaise === "number") {
-    conditions.push(gte(products.basePricePaise, minPricePaise));
+  if (categorySlug) {
+    try {
+      const matchedCategory = await db.query.categories.findFirst({
+        where: eq(categories.slug, categorySlug),
+        columns: { id: true },
+      });
+      if (matchedCategory) {
+        conditions.push(eq(products.categoryId, matchedCategory.id));
+      }
+    } catch (err) {
+      console.error("[Category Lookup Error]:", err);
+    }
   }
 
-  if (typeof maxPricePaise === "number") {
-    conditions.push(lte(products.basePricePaise, maxPricePaise));
-  }
+  const orderByClause = {
+    price_asc: [asc(products.basePricePaise)],
+    price_desc: [desc(products.basePricePaise)],
+    newest: [desc(products.createdAt)],
+  }[sortBy];
 
-  // Sorting Strategy
-  let orderByClause = desc(products.createdAt);
-  if (sortBy === "price_asc") {
-    orderByClause = asc(products.basePricePaise);
-  } else if (sortBy === "price_desc") {
-    orderByClause = desc(products.basePricePaise);
-  }
+  const whereClause = and(...conditions);
 
-  // 1. Execute total count query for pagination metadata
-  const totalCountResult = await db
-    .select({ total: count() })
-    .from(products)
-    .where(and(...conditions));
+  try {
+    const [data, totalCountResult] = await Promise.all([
+      db.query.products.findMany({
+        where: whereClause,
+        limit: pageSize,
+        offset,
+        orderBy: orderByClause,
+        with: {
+          category: { columns: { id: true, name: true, slug: true } },
+          media: {
+            orderBy: [asc(productMedia.displayOrder)],
+            limit: 2,
+          },
+          specifications: true,
+          secondHandDetails: true,
+        },
+      }),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(products)
+        .where(whereClause),
+    ]);
 
-  const totalCount = totalCountResult[0]?.total ?? 0;
-  const totalPages = Math.ceil(totalCount / pageSize);
+    let filteredItems = data;
 
-  // 2. Fetch data using Drizzle Relational API with eager joins
-  const items = await db.query.products.findMany({
-    where: and(...conditions),
-    orderBy: [orderByClause],
-    limit: pageSize,
-    offset,
-    with: {
-      category: {
-        columns: { id: true, name: true, slug: true },
+    if (cosmeticGrades && cosmeticGrades.length > 0) {
+      filteredItems = filteredItems.filter(
+        (item) =>
+          item.secondHandDetails &&
+          cosmeticGrades.includes(
+            item.secondHandDetails.cosmeticGrade as "A" | "B" | "C"
+          )
+      );
+    }
+
+    if (motorKv) {
+      filteredItems = filteredItems.filter((item) =>
+        item.specifications?.motorKv
+          ?.toLowerCase()
+          .includes(motorKv.toLowerCase())
+      );
+    }
+
+    const totalCount = totalCountResult[0]?.count ?? 0;
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    return {
+      data: filteredItems,
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
       },
-      media: {
-        orderBy: [asc(productMedia.displayOrder)],
-        limit: 2, // Primary thumbnail + hover preview image/video
+    };
+  } catch (error) {
+    console.error("[Get Products Query Error]:", error);
+    return {
+      data: [],
+      pagination: {
+        page,
+        pageSize,
+        totalCount: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
       },
-      specifications: true,
-      secondHandDetails: true,
-    },
-  });
-
-  // Client-side spec filtering for complex 1:1 joined fields if requested
-  let filteredItems = items;
-
-  if (cosmeticGrades && cosmeticGrades.length > 0) {
-    filteredItems = filteredItems.filter(
-      (item) =>
-        item.secondHandDetails &&
-        cosmeticGrades.includes(
-          item.secondHandDetails.cosmeticGrade as "A" | "B" | "C"
-        )
-    );
+    };
   }
-
-  if (motorKv) {
-    filteredItems = filteredItems.filter((item) =>
-      item.specifications?.motorKv
-        ?.toLowerCase()
-        .includes(motorKv.toLowerCase())
-    );
-  }
-
-  return {
-    data: filteredItems,
-    pagination: {
-      page,
-      pageSize,
-      totalCount,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-    },
-  };
 }
 
-// ============================================================================
-// 3. PRODUCT DETAIL PAGE (PDP) LOOKUP
-// ============================================================================
-
 /**
- * Resolves a single product by unique slug, including full media galleries,
- * flight demo video streams, hardware specification matrices, and inspection reports.
+ * Resolves a single SKU by slug with all joined media and specifications.
+ * Wrapped with Next.js edge micro-caching (TTL: 60s).
  */
 export async function getProductBySlug(slug: string) {
-  const product = await db.query.products.findFirst({
-    where: and(eq(products.slug, slug), eq(products.status, "active")),
-    with: {
-      category: true,
-      media: {
-        orderBy: [asc(productMedia.displayOrder)],
-      },
-      specifications: true,
-      secondHandDetails: true,
+  return unstable_cache(
+    async () => {
+      try {
+        const product = await db.query.products.findFirst({
+          where: and(eq(products.slug, slug), eq(products.status, "active")),
+          with: {
+            category: true,
+            media: {
+              orderBy: [asc(productMedia.displayOrder)],
+            },
+            specifications: true,
+            secondHandDetails: true,
+          },
+        });
+        return product || null;
+      } catch (error) {
+        console.error("[Get Product By Slug Error]:", error);
+        return null;
+      }
     },
-  });
-
-  return product || null;
+    [`product-${slug}`],
+    {
+      revalidate: 60,
+      tags: ["catalog", `product-${slug}`],
+    }
+  )();
 }
 
-// ============================================================================
-// 4. PRE-OWNED DRONE MARKETPLACE QUERY
-// ============================================================================
-
 /**
- * Specialized query for the /used-drones route, fetching verified pre-owned
- * hardware filtered by inspection grade.
+ * Queries pre-owned inventory with inspection details.
  */
 export async function getPreOwnedDrones(
   options: {
@@ -223,48 +250,39 @@ export async function getPreOwnedDrones(
     limit?: number;
   } = {}
 ) {
-  const { cosmeticGrade, limit = 12 } = options;
+  const { cosmeticGrade, limit = 20 } = options;
 
-  const results = await db.query.products.findMany({
-    where: and(eq(products.isSecondHand, true), eq(products.status, "active")),
-    orderBy: [desc(products.createdAt)],
-    limit,
-    with: {
-      category: true,
-      media: {
-        orderBy: [asc(productMedia.displayOrder)],
+  const conditions = [
+    eq(products.status, "active"),
+    eq(products.isSecondHand, true),
+  ];
+
+  try {
+    const items = await db.query.products.findMany({
+      where: and(...conditions),
+      limit,
+      orderBy: [desc(products.createdAt)],
+      with: {
+        category: true,
+        media: {
+          orderBy: [asc(productMedia.displayOrder)],
+        },
+        secondHandDetails: true,
+        specifications: true,
       },
-      secondHandDetails: true,
-      specifications: true,
-    },
-  });
+    });
 
-  if (cosmeticGrade) {
-    return results.filter(
-      (item) => item.secondHandDetails?.cosmeticGrade === cosmeticGrade
-    );
+    if (cosmeticGrade) {
+      return items.filter(
+        (item) => item.secondHandDetails?.cosmeticGrade === cosmeticGrade
+      );
+    }
+
+    return items;
+  } catch (error) {
+    console.error("[Get Pre-Owned Drones Error]:", error);
+    return [];
   }
-
-  return results;
-}
-
-// ============================================================================
-// 5. TAXONOMY & TYPEAHEAD AUTOCOMPLETE
-// ============================================================================
-
-/**
- * Fetches root categories with live active SKU counts for storefront navigation.
- */
-export async function getCatalogCategories() {
-  return await db.query.categories.findMany({
-    orderBy: [asc(categories.name)],
-    with: {
-      products: {
-        where: eq(products.status, "active"),
-        columns: { id: true },
-      },
-    },
-  });
 }
 
 /**
@@ -275,30 +293,35 @@ export async function quickSearchProducts(term: string) {
 
   const sanitized = `%${term.trim()}%`;
 
-  return await db.query.products.findMany({
-    where: and(
-      eq(products.status, "active"),
-      or(ilike(products.name, sanitized), ilike(products.sku, sanitized))!
-    ),
-    limit: 6,
-    columns: {
-      id: true,
-      name: true,
-      slug: true,
-      sku: true,
-      basePricePaise: true,
-      stockQuantity: true,
-      isSecondHand: true,
-    },
-    with: {
-      media: {
-        where: eq(productMedia.mediaType, "image"),
-        orderBy: [asc(productMedia.displayOrder)],
-        limit: 1,
-        columns: { url: true },
+  try {
+    return await db.query.products.findMany({
+      where: and(
+        eq(products.status, "active"),
+        or(ilike(products.name, sanitized), ilike(products.sku, sanitized))!
+      ),
+      limit: 6,
+      columns: {
+        id: true,
+        name: true,
+        slug: true,
+        sku: true,
+        basePricePaise: true,
+        stockQuantity: true,
+        isSecondHand: true,
       },
-    },
-  });
+      with: {
+        media: {
+          where: eq(productMedia.mediaType, "image"),
+          orderBy: [asc(productMedia.displayOrder)],
+          limit: 1,
+          columns: { url: true },
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[Quick Search Error]:", error);
+    return [];
+  }
 }
 
 /**
@@ -311,20 +334,25 @@ export async function getRelatedProducts(
 ) {
   if (!categoryId) return [];
 
-  return await db.query.products.findMany({
-    where: and(
-      eq(products.categoryId, categoryId),
-      eq(products.status, "active"),
-      sql`${products.id} != ${currentProductId}`
-    ),
-    limit: limitCount,
-    orderBy: [desc(products.createdAt)],
-    with: {
-      media: {
-        orderBy: [asc(productMedia.displayOrder)],
-        limit: 1,
+  try {
+    return await db.query.products.findMany({
+      where: and(
+        eq(products.categoryId, categoryId),
+        eq(products.status, "active"),
+        sql`${products.id} != ${currentProductId}`
+      ),
+      limit: limitCount,
+      orderBy: [desc(products.createdAt)],
+      with: {
+        media: {
+          orderBy: [asc(productMedia.displayOrder)],
+          limit: 1,
+        },
+        secondHandDetails: true,
       },
-      secondHandDetails: true,
-    },
-  });
+    });
+  } catch (error) {
+    console.error("[Related Products Error]:", error);
+    return [];
+  }
 }
