@@ -120,43 +120,143 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
         </div>
 
         {/* Categories */}
-        {categories.length > 0 && (
-          <div>
-            <span className="text-[11px] font-bold tracking-wider text-zinc-500 uppercase font-mono">
-              Component Category
-            </span>
-            <div className="mt-2 flex max-h-56 scrollbar-thin flex-col gap-1 overflow-y-auto pr-1">
-              <button
-                type="button"
-                onClick={() => updateFilters("category", null)}
-                className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
-                  currentCategory === ""
-                    ? "bg-black font-bold text-white shadow-xs"
-                    : "text-zinc-600 hover:bg-zinc-200/70 hover:text-black font-medium"
-                }`}
-              >
-                <span>All Components</span>
-              </button>
-              {categories.map((cat) => (
+        {categories.length > 0 && (() => {
+          const droneCategories = categories.filter(
+            (c) =>
+              c.slug !== "drones" &&
+              (c.slug.includes("drone") || c.name.toLowerCase().includes("drone"))
+          );
+          const otherCategories = categories.filter(
+            (c) =>
+              c.slug !== "drones" &&
+              !c.slug.includes("drone") &&
+              !c.name.toLowerCase().includes("drone")
+          );
+          const totalDroneCount = droneCategories.reduce(
+            (acc, c) => acc + c.productCount,
+            0
+          );
+          const isAnyDroneActive =
+            currentCategory === "drones" ||
+            droneCategories.some((c) => c.slug === currentCategory);
+
+          return (
+            <div>
+              <span className="text-[11px] font-bold tracking-wider text-zinc-500 uppercase font-mono">
+                Component Category
+              </span>
+              <div className="mt-2.5 flex max-h-72 scrollbar-thin flex-col gap-1 overflow-y-auto pr-1">
+                {/* 1. All Components */}
                 <button
-                  key={cat.id}
                   type="button"
-                  onClick={() => updateFilters("category", cat.slug)}
+                  onClick={() => updateFilters("category", null)}
                   className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
-                    currentCategory === cat.slug
+                    currentCategory === ""
                       ? "bg-black font-bold text-white shadow-xs"
                       : "text-zinc-600 hover:bg-zinc-200/70 hover:text-black font-medium"
                   }`}
                 >
-                  <span className="truncate">{cat.name}</span>
-                  <span className={`text-[10px] ${currentCategory === cat.slug ? "text-zinc-300 font-mono" : "text-zinc-400 font-mono"}`}>
-                    {cat.productCount}
-                  </span>
+                  <span>All Components</span>
                 </button>
-              ))}
+
+                {/* 2. Drones Parent Category */}
+                <div className="mt-1">
+                  <button
+                    type="button"
+                    onClick={() => updateFilters("category", "drones")}
+                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
+                      currentCategory === "drones"
+                        ? "bg-black font-bold text-white shadow-xs"
+                        : isAnyDroneActive
+                        ? "text-black font-bold bg-zinc-200/50"
+                        : "text-zinc-700 hover:bg-zinc-200/70 hover:text-black font-semibold"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 truncate">
+                      <span>Drones</span>
+                    </span>
+                    <span
+                      className={`text-[10px] font-mono ${
+                        currentCategory === "drones"
+                          ? "text-[#c8f33b] font-bold"
+                          : "text-zinc-500 font-semibold"
+                      }`}
+                    >
+                      {totalDroneCount}
+                    </span>
+                  </button>
+
+                  {/* Indented Drone Sub-categories */}
+                  <div className="ml-3 my-1 pl-2.5 border-l-2 border-zinc-200 flex flex-col gap-0.5">
+                    {droneCategories.map((cat) => {
+                      const isSelected = currentCategory === cat.slug;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => updateFilters("category", cat.slug)}
+                          className={`group flex items-center justify-between rounded-md px-2 py-1 text-left text-[11px] transition-colors ${
+                            isSelected
+                              ? "bg-black font-bold text-white shadow-xs"
+                              : "text-zinc-600 hover:bg-zinc-200/70 hover:text-black font-medium"
+                          }`}
+                        >
+                          <span className="truncate flex items-center gap-1.5">
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full transition-colors ${
+                                isSelected
+                                  ? "bg-[#c8f33b]"
+                                  : "bg-zinc-300 group-hover:bg-zinc-500"
+                              }`}
+                            />
+                            <span>{cat.name}</span>
+                          </span>
+                          <span
+                            className={`text-[10px] font-mono ${
+                              isSelected ? "text-zinc-300" : "text-zinc-400"
+                            }`}
+                          >
+                            {cat.productCount}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Other Non-Drone Hardware & Accessories */}
+                {otherCategories.length > 0 && (
+                  <div className="mt-1 pt-1 border-t border-zinc-200/80 flex flex-col gap-1">
+                    {otherCategories.map((cat) => {
+                      const isSelected = currentCategory === cat.slug;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => updateFilters("category", cat.slug)}
+                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
+                            isSelected
+                              ? "bg-black font-bold text-white shadow-xs"
+                              : "text-zinc-600 hover:bg-zinc-200/70 hover:text-black font-medium"
+                          }`}
+                        >
+                          <span className="truncate">{cat.name}</span>
+                          <span
+                            className={`text-[10px] font-mono ${
+                              isSelected ? "text-zinc-300" : "text-zinc-400"
+                            }`}
+                          >
+                            {cat.productCount}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Price Range (₹) */}
         <div>

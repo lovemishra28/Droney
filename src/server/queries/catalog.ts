@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   categories,
@@ -45,7 +45,7 @@ export const getCatalogCategories = unstable_cache(
       "catalog:categories:tree",
       async () => {
         try {
-          return await db.query.categories.findMany({
+          const allCategories = await db.query.categories.findMany({
             orderBy: [asc(categories.name)],
             with: {
               products: {
@@ -54,17 +54,26 @@ export const getCatalogCategories = unstable_cache(
               },
             },
           });
+          // Deduplicate categories by slug and normalized name
+          const seenSlugs = new Set<string>();
+          return allCategories.filter((cat) => {
+            if (!cat.slug || seenSlugs.has(cat.slug.toLowerCase())) {
+              return false;
+            }
+            seenSlugs.add(cat.slug.toLowerCase());
+            return true;
+          });
         } catch (error) {
           console.error("[Catalog Categories Query Error]:", error);
           return [];
         }
       },
-      { ttlSeconds: 300 }
+      { ttlSeconds: 60 }
     );
   },
   ["catalog-categories"],
   {
-    revalidate: 300,
+    revalidate: 60,
     tags: ["catalog", "categories"],
   }
 );
@@ -115,12 +124,31 @@ export async function getProducts(params: CatalogFilterParams = {}) {
 
   if (categorySlug) {
     try {
-      const matchedCategory = await db.query.categories.findFirst({
-        where: eq(categories.slug, categorySlug),
-        columns: { id: true },
-      });
-      if (matchedCategory) {
-        conditions.push(eq(products.categoryId, matchedCategory.id));
+      if (categorySlug === "drones") {
+        // Query all drone categories (camera-drones, fpv-drones, mini-drone, professional-drone, used-drones)
+        const droneCategories = await db.query.categories.findMany({
+          where: or(
+            ilike(categories.slug, "%drone%"),
+            ilike(categories.name, "%drone%")
+          ),
+          columns: { id: true },
+        });
+        if (droneCategories.length > 0) {
+          conditions.push(
+            inArray(
+              products.categoryId,
+              droneCategories.map((c) => c.id)
+            )
+          );
+        }
+      } else {
+        const matchedCategory = await db.query.categories.findFirst({
+          where: eq(categories.slug, categorySlug),
+          columns: { id: true },
+        });
+        if (matchedCategory) {
+          conditions.push(eq(products.categoryId, matchedCategory.id));
+        }
       }
     } catch (err) {
       console.error("[Category Lookup Error]:", err);

@@ -161,7 +161,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   let catalogSubtitle = `Showing ${pagination.totalCount} products across certified drone frames, ESCs, motors, and camera gear.`;
   let categoryLabel = "";
 
-  if (categorySlug === "accessories") {
+  if (categorySlug === "drones") {
+    catalogTitle = "Flight Fleet & Drones";
+    catalogSubtitle = `Showing ${pagination.totalCount} certified camera platforms, FPV racers, and aerial fleet drones.`;
+    categoryLabel = "Drones";
+  } else if (categorySlug === "accessories") {
     catalogTitle = "Aviation Accessories & Cinema Glass";
     catalogSubtitle = `Showing ${pagination.totalCount} essential flight batteries, ND filters, rugged cases, and remote controllers.`;
     categoryLabel = "Accessories";
@@ -173,6 +177,14 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     catalogTitle = "FPV & Acro Racing Drones";
     catalogSubtitle = `Showing ${pagination.totalCount} tuned acrobatic platforms and BNF quadcopters.`;
     categoryLabel = "FPV Drones";
+  } else if (categorySlug === "mini-drone") {
+    catalogTitle = "Mini & Lightweight Drones";
+    catalogSubtitle = `Showing ${pagination.totalCount} ultra-compact, portable, and beginner-friendly aerial drones.`;
+    categoryLabel = "Mini Drone";
+  } else if (categorySlug === "professional-drone") {
+    catalogTitle = "Professional & Cinema Drones";
+    catalogSubtitle = `Showing ${pagination.totalCount} enterprise-grade, high-end cinema, and heavy-lift aerial platforms.`;
+    categoryLabel = "Professional Drone";
   } else if (categorySlug === "motors") {
     catalogTitle = "Motors, ESCs & Power Electronics";
     catalogSubtitle = `Showing ${pagination.totalCount} high-efficiency brushless motors, titanium stacks, and ESC controllers.`;

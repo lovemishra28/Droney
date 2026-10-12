@@ -1,4 +1,5 @@
 import { getProducts } from "@/server/queries/catalog";
+import { HeroStrips } from "@/components/storefront/hero-strips";
 import { HeroSection } from "@/components/storefront/hero-section";
 import { NewArrivalsAndPreOwnedSection } from "@/components/storefront/new-arrivals-and-preowned";
 import { AccessoriesShowcase } from "@/components/storefront/accessories-showcase";
@@ -16,6 +17,9 @@ export default async function StorefrontHomePage() {
 
   return (
     <div className="bg-white">
+      {/* 0. Live Alert & Trust Strips */}
+      <HeroStrips />
+
       {/* 1. Altitude Aviation Tech Hero Section */}
       <HeroSection />
 
