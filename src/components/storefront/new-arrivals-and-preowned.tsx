@@ -69,20 +69,9 @@ const NEW_ARRIVALS_SPEC = [
   },
 ];
 
-const FILTER_PILLS = [
-  { id: "all", label: "All Gear", href: "/catalog" },
-  { id: "new", label: "New Drones", href: "/catalog?condition=new" },
-  { id: "second-hand", label: "Second-Hand Drones", badge: "Save up to 40%", href: "/used-drones" },
-  { id: "accessories", label: "Accessories", href: "/catalog?category=accessories" },
-  { id: "diy", label: "DIY Components", href: "/kit-builder" },
-  { id: "motors", label: "Propellers & Motors", href: "/catalog?category=motors" },
-  { id: "batteries", label: "Batteries & Chargers", href: "/catalog?category=accessories" },
-];
-
 export function NewArrivalsAndPreOwnedSection({
   initialProducts = [],
 }: NewArrivalsAndPreOwnedSectionProps) {
-  const [activeFilter, setActiveFilter] = useState("all");
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -182,33 +171,7 @@ export function NewArrivalsAndPreOwnedSection({
           </div>
         )}
 
-        {/* ==================================================================== */}
-        {/* PART 1: TOP CATEGORY FILTER PILLS                                  */}
-        {/* ==================================================================== */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {FILTER_PILLS.map((pill) => {
-            const isSelected = activeFilter === pill.id;
-            return (
-              <button
-                key={pill.id}
-                type="button"
-                onClick={() => setActiveFilter(pill.id)}
-                className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                  isSelected
-                    ? "bg-black text-white shadow-xs"
-                    : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700"
-                }`}
-              >
-                <span>{pill.label}</span>
-                {pill.badge && (
-                  <span className="rounded bg-[#fff275] px-1.5 py-0.5 text-[10px] font-bold text-amber-950">
-                    {pill.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+
 
         {/* ==================================================================== */}
         {/* PART 2: NEW ARRIVALS GRID HEADER & 4 PRODUCT CARDS                  */}

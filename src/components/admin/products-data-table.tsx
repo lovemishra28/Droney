@@ -53,8 +53,10 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
   const [isPending, startTransition] = useTransition();
   const [editingStockId, setEditingStockId] = useState<string | null>(null);
   const [stockInput, setStockInput] = useState<number>(0);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const handleStockSave = (productId: string) => {
+    setActionError(null);
     startTransition(async () => {
       const result = await updateProductStockAction({
         productId,
@@ -70,6 +72,8 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
           )
         );
         setEditingStockId(null);
+      } else {
+        setActionError(result.message || "Unable to update stock.");
       }
     });
   };
@@ -78,6 +82,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
     productId: string,
     nextStatus: "active" | "draft" | "archived"
   ) => {
+    setActionError(null);
     startTransition(async () => {
       const result = await toggleProductStatusAction({
         productId,
@@ -90,6 +95,8 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
             item.id === productId ? { ...item, status: nextStatus } : item
           )
         );
+      } else {
+        setActionError(result.message || "Unable to update listing status.");
       }
     });
   };
@@ -98,12 +105,12 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
     () => [
       {
         accessorKey: "sku",
-        header: "SKU / Media",
+        header: "SKU / Preview",
         cell: ({ row }) => {
           const item = row.original;
           return (
             <div className="flex items-center gap-3">
-              <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
+              <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
                 <Image
                   src={item.thumbnailUrl || "/placeholders/drone-placeholder.svg"}
                   alt={item.name}
@@ -112,18 +119,22 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                 />
               </div>
               <div>
-                <span className="font-mono text-xs font-semibold text-indigo-400">
+                <span className="font-mono text-xs font-bold text-white">
                   {item.sku}
                 </span>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {item.hasVideo && (
                     <span title="Bunny HLS Video Linked">
-                      <Video className="h-3 w-3 text-emerald-400" />
+                      <Video className="h-3 w-3 text-[#c8f33b]" />
                     </span>
                   )}
-                  {item.isSecondHand && (
-                    <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-500/30">
+                  {item.isSecondHand ? (
+                    <span className="rounded border border-emerald-500/30 bg-emerald-950/60 px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase text-emerald-400">
                       Grade {item.cosmeticGrade || "A"}
+                    </span>
+                  ) : (
+                    <span className="rounded bg-zinc-800 px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase text-zinc-300">
+                      New
                     </span>
                   )}
                 </div>
@@ -134,7 +145,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
       },
       {
         accessorKey: "name",
-        header: "Product Title & Category",
+        header: "Component Title",
         cell: ({ row }) => {
           const item = row.original;
           return (
@@ -142,12 +153,15 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
               <Link
                 href={`/product/${item.slug}`}
                 target="_blank"
-                className="inline-flex items-center gap-1 font-medium text-white hover:text-indigo-400 transition-colors line-clamp-1"
+                className="group flex items-center gap-1 font-semibold text-zinc-100 hover:text-[#c8f33b] transition-colors"
+                title="View live storefront product page"
               >
-                <span>{item.name}</span>
-                <ExternalLink className="h-3 w-3 opacity-60 flex-shrink-0" />
+                <span className="truncate">{item.name}</span>
+                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#c8f33b] shrink-0" />
               </Link>
-              <span className="text-[11px] text-zinc-500 block">{item.categoryName}</span>
+              <span className="block text-[11px] font-mono text-zinc-500 mt-0.5">
+                {item.categoryName}
+              </span>
             </div>
           );
         },
@@ -158,14 +172,14 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
           <button
             type="button"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 hover:text-white transition-colors"
+            className="flex items-center gap-1 font-mono uppercase text-zinc-400 hover:text-white"
           >
-            <span>Price</span>
+            <span>Base Price</span>
             <ArrowUpDown className="h-3 w-3" />
           </button>
         ),
         cell: ({ row }) => (
-          <span className="font-semibold text-zinc-200">
+          <span className="font-mono font-bold text-white text-sm">
             {formatINR(row.original.basePricePaise)}
           </span>
         ),
@@ -176,35 +190,34 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
           <button
             type="button"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 hover:text-white transition-colors"
+            className="flex items-center gap-1 font-mono uppercase text-zinc-400 hover:text-white"
           >
-            <span>Stock</span>
+            <span>Inventory Stock</span>
             <ArrowUpDown className="h-3 w-3" />
           </button>
         ),
         cell: ({ row }) => {
           const item = row.original;
-          const isEditing = editingStockId === item.id;
-          const isLowStock = item.stockQuantity <= 3;
+          const isLowStock = item.stockQuantity <= 3 && item.stockQuantity > 0;
 
-          if (isEditing) {
+          if (editingStockId === item.id) {
             return (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <input
                   type="number"
                   min={0}
                   value={stockInput}
                   onChange={(e) => setStockInput(parseInt(e.target.value, 10) || 0)}
-                  className="w-16 rounded border border-zinc-700 bg-zinc-950 px-2 py-1 font-mono text-xs text-white focus:outline-none"
+                  className="w-18 rounded-lg border border-[#c8f33b]/60 bg-zinc-950 px-2 py-1 font-mono text-xs text-white focus:outline-none"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={() => handleStockSave(item.id)}
                   disabled={isPending}
-                  className="rounded bg-indigo-600 p-1 text-white hover:bg-indigo-500 transition-colors"
+                  className="rounded-lg bg-[#c8f33b] p-1.5 text-black hover:bg-[#b5e028] transition-colors"
                 >
-                  <Check className="h-3 w-3" />
+                  <Check className="h-3.5 w-3.5 stroke-[3]" />
                 </button>
               </div>
             );
@@ -218,14 +231,14 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                   setEditingStockId(item.id);
                   setStockInput(item.stockQuantity);
                 }}
-                className={`font-mono text-xs font-semibold px-2 py-0.5 rounded border transition-colors ${
+                className={`font-mono text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
                   item.stockQuantity === 0
                     ? "border-rose-500/40 bg-rose-950/60 text-rose-300"
                     : isLowStock
                     ? "border-amber-500/40 bg-amber-950/60 text-amber-300"
-                    : "border-zinc-800 bg-zinc-950 text-zinc-200 hover:border-zinc-700"
+                    : "border-zinc-800 bg-zinc-950 text-zinc-200 hover:border-zinc-700 hover:text-white"
                 }`}
-                title="Click to edit stock level"
+                title="Click to inline edit stock level"
               >
                 {item.stockQuantity} units
               </button>
@@ -253,11 +266,11 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                   e.target.value as "active" | "draft" | "archived"
                 )
               }
-              className={`rounded-lg border px-2 py-1 text-[11px] font-semibold uppercase tracking-wider focus:outline-none transition-colors ${
+              className={`rounded-xl border px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider focus:outline-none transition-colors ${
                 item.status === "active"
-                  ? "border-emerald-500/30 bg-emerald-950/60 text-emerald-300"
+                  ? "border-emerald-500/40 bg-emerald-950/60 text-emerald-300"
                   : item.status === "draft"
-                  ? "border-amber-500/30 bg-amber-950/60 text-amber-300"
+                  ? "border-amber-500/40 bg-amber-950/60 text-amber-300"
                   : "border-zinc-800 bg-zinc-900 text-zinc-500"
               }`}
             >
@@ -286,29 +299,37 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
-      pagination: { pageSize: 25 }, // High-density 25 SKUs per page
+      pagination: { pageSize: 25 },
     },
   });
 
   return (
     <div className="space-y-4">
+      {actionError && (
+        <div
+          role="alert"
+          className="rounded-2xl border border-rose-500/30 bg-rose-950/40 px-4 py-3 text-xs text-rose-300"
+        >
+          {actionError}
+        </div>
+      )}
       {/* Top Search & Actions Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="relative min-w-[280px] flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             value={globalFilter ?? ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder="Search SKU, component title, category..."
-            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 py-2 pl-9 pr-3 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+            placeholder="Search SKU, drone title, category..."
+            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 py-2.5 pl-10 pr-4 text-xs text-white placeholder-zinc-500 focus:border-[#c8f33b]/60 focus:outline-none transition-colors"
           />
         </div>
 
         <div className="flex items-center gap-2">
           <Link
             href="/admin/import"
-            className="rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-700 hover:text-white transition-colors"
+            className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:border-zinc-700 hover:text-white transition-colors"
           >
             Bulk CSV Ingest
           </Link>
@@ -316,14 +337,14 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
       </div>
 
       {/* Main Table Panel */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
+      <div className="overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/40">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400 uppercase">
+            <thead className="border-b border-zinc-800 bg-zinc-950/70 font-mono text-[11px] text-zinc-400 uppercase">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="px-5 py-3.5">
+                    <th key={header.id} className="px-5 py-4">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -335,10 +356,10 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-zinc-800/80 text-zinc-200">
+            <tbody className="divide-y divide-zinc-800/60 text-zinc-200">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-5 py-8 text-center text-zinc-500">
+                  <td colSpan={columns.length} className="px-5 py-10 text-center text-zinc-500 font-mono">
                     No matching products found in catalog.
                   </td>
                 </tr>
@@ -346,7 +367,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                 table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="hover:bg-zinc-900/60 transition-colors">
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-5 py-3.5">
+                      <td key={cell.id} className="px-5 py-4">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -358,8 +379,8 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
         </div>
 
         {/* Pagination Bar */}
-        <div className="flex items-center justify-between border-t border-zinc-800/80 px-5 py-3 text-xs text-zinc-400">
-          <span>
+        <div className="flex items-center justify-between border-t border-zinc-800/80 px-5 py-3.5 text-xs text-zinc-400">
+          <span className="font-mono">
             Showing {table.getRowModel().rows.length} of {data.length} total SKUs
           </span>
 
@@ -372,7 +393,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
             >
               Previous
             </button>
-            <span className="font-mono">
+            <span className="font-mono text-zinc-300">
               Page {table.getState().pagination.pageIndex + 1} of{" "}
               {table.getPageCount() || 1}
             </span>

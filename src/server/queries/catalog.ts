@@ -254,6 +254,7 @@ export async function getProductBySlug(slug: string) {
             },
             specifications: true,
             secondHandDetails: true,
+            showcase: true,
           },
         });
 
@@ -275,6 +276,7 @@ export async function getProductBySlug(slug: string) {
               },
               specifications: true,
               secondHandDetails: true,
+              showcase: true,
             },
           });
         }

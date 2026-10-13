@@ -58,14 +58,14 @@ export function GstInvoiceModal({ invoice, onClose }: GstInvoiceModalProps) {
       <div className="relative max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-zinc-100 shadow-2xl print:border-none print:bg-white print:text-black print:max-h-none print:overflow-visible">
         {/* Controls (Hidden during physical print) */}
         <div className="flex items-center justify-between border-b border-zinc-800 pb-4 print:hidden">
-          <span className="font-mono text-xs font-semibold uppercase tracking-wider text-indigo-400">
+          <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#c8f33b]">
             GST Tax Invoice Preview
           </span>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl bg-[#c8f33b] px-3.5 py-1.5 text-xs font-bold text-black hover:bg-[#b5e028] transition-colors shadow-xs"
             >
               <Printer className="h-3.5 w-3.5" />
               <span>Print Invoice</span>

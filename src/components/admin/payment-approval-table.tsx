@@ -7,8 +7,10 @@ import {
   Check,
   CheckCircle2,
   Copy,
+  ExternalLink,
   Eye,
   Loader2,
+  ShieldAlert,
   X,
 } from "lucide-react";
 import { formatINR } from "@/lib/utils";
@@ -86,79 +88,88 @@ export function PaymentApprovalTable({ orders: initialOrders }: PaymentApprovalT
   return (
     <div className="space-y-4">
       {actionError && (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-950/40 p-3.5 text-xs text-rose-300">
-          {actionError}
+        <div className="rounded-2xl border border-rose-500/30 bg-rose-950/40 p-4 text-xs text-rose-300 flex items-center gap-2">
+          <ShieldAlert className="h-4 w-4 shrink-0 text-rose-400" />
+          <span>{actionError}</span>
         </div>
       )}
 
       {ordersList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 p-12 text-center">
-          <CheckCircle2 className="h-10 w-10 text-emerald-500/60" />
-          <h3 className="mt-3 text-sm font-semibold text-zinc-200">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 p-16 text-center bg-zinc-900/20">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#c8f33b]/10 border border-[#c8f33b]/20 text-[#c8f33b]">
+            <CheckCircle2 className="h-6 w-6" />
+          </div>
+          <h3 className="mt-4 text-base font-bold text-white font-mono uppercase tracking-wider">
             Reconciliation Queue Cleared
           </h3>
-          <p className="mt-1 text-xs text-zinc-500">
-            No customer orders are currently awaiting manual UPI verification.
+          <p className="mt-1.5 text-xs text-zinc-400 max-w-sm">
+            All submitted bank UTR numbers have been verified and cleared for immediate dispatch.
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <div className="overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/40">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400 uppercase">
+              <thead className="border-b border-zinc-800 bg-zinc-950/70 font-mono text-[11px] text-zinc-400 uppercase">
                 <tr>
-                  <th className="px-5 py-3.5">Order Ref</th>
-                  <th className="px-5 py-3.5">Customer</th>
-                  <th className="px-5 py-3.5">Payable Amount</th>
-                  <th className="px-5 py-3.5">12-Digit Bank UTR</th>
-                  <th className="px-5 py-3.5">Receipt Proof</th>
-                  <th className="px-5 py-3.5 text-right">Verification Actions</th>
+                  <th className="px-5 py-4">Order Ref</th>
+                  <th className="px-5 py-4">Customer</th>
+                  <th className="px-5 py-4">Payable Amount</th>
+                  <th className="px-5 py-4">12-Digit Bank UTR</th>
+                  <th className="px-5 py-4">Receipt Proof</th>
+                  <th className="px-5 py-4 text-right">Verification Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/80 text-zinc-200">
+              <tbody className="divide-y divide-zinc-800/60 text-zinc-200">
                 {ordersList.map((ord) => (
                   <tr key={ord.id} className="hover:bg-zinc-900/60 transition-colors">
                     {/* Order Reference */}
-                    <td className="px-5 py-4 font-mono font-semibold text-indigo-400">
-                      {ord.orderReference}
-                      <span className="block text-[10px] font-normal text-zinc-500">
+                    <td className="px-5 py-4">
+                      <span className="font-mono font-bold text-white text-sm">
+                        {ord.orderReference}
+                      </span>
+                      <span className="block text-[11px] font-mono text-zinc-500 mt-0.5">
                         {ord.itemCount} line item(s)
                       </span>
                     </td>
 
                     {/* Customer Contact */}
                     <td className="px-5 py-4">
-                      <p className="font-medium text-white">{ord.customerName}</p>
-                      <span className="text-[11px] text-zinc-400">
+                      <p className="font-semibold text-zinc-100">{ord.customerName}</p>
+                      <span className="text-[11px] font-mono text-zinc-400">
                         {ord.customerPhone || ord.customerEmail || "N/A"}
                       </span>
                     </td>
 
                     {/* Amount */}
-                    <td className="px-5 py-4 font-semibold text-white">
+                    <td className="px-5 py-4 font-mono font-bold text-white text-sm">
                       {formatINR(ord.totalAmountPaise)}
                     </td>
 
                     {/* Submitted UTR with Copy Helper */}
                     <td className="px-5 py-4">
                       {ord.upiTransactionId ? (
-                        <div className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-1 font-mono text-zinc-200">
-                          <span>{ord.upiTransactionId}</span>
+                        <div className="inline-flex items-center gap-2 rounded-xl border border-zinc-700/80 bg-zinc-950 px-3 py-1.5 font-mono text-xs text-white shadow-xs">
+                          <span className="font-semibold tracking-wider text-amber-300">
+                            {ord.upiTransactionId}
+                          </span>
                           <button
                             type="button"
                             onClick={() => handleCopyUtr(ord.upiTransactionId!)}
-                            className="text-zinc-500 hover:text-zinc-200 transition-colors"
-                            title="Copy UTR to verify in bank app"
+                            className="text-zinc-500 hover:text-white transition-colors"
+                            title="Copy UTR to verify in net banking app"
                           >
                             {copiedUtr === ord.upiTransactionId ? (
-                              <Check className="h-3 w-3 text-emerald-400" />
+                              <Check className="h-3.5 w-3.5 text-[#c8f33b]" />
                             ) : (
-                              <Copy className="h-3 w-3" />
+                              <Copy className="h-3.5 w-3.5" />
                             )}
                           </button>
                         </div>
                       ) : (
-                        <span className="font-mono text-amber-500">Pending Input</span>
+                        <span className="font-mono text-amber-400 font-semibold">
+                          Pending Input
+                        </span>
                       )}
                     </td>
 
@@ -168,13 +179,15 @@ export function PaymentApprovalTable({ orders: initialOrders }: PaymentApprovalT
                         <button
                           type="button"
                           onClick={() => setPreviewScreenshotUrl(ord.paymentScreenshotUrl)}
-                          className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-700 transition-colors"
+                          className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800/90 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-700 hover:text-white transition-colors"
                         >
-                          <Eye className="h-3.5 w-3.5 text-indigo-400" />
-                          <span>View Receipt</span>
+                          <Eye className="h-3.5 w-3.5 text-[#c8f33b]" />
+                          <span>View Proof</span>
                         </button>
                       ) : (
-                        <span className="text-[11px] text-zinc-600">No image attached</span>
+                        <span className="text-[11px] font-mono text-zinc-500">
+                          No file uploaded
+                        </span>
                       )}
                     </td>
 
@@ -185,9 +198,13 @@ export function PaymentApprovalTable({ orders: initialOrders }: PaymentApprovalT
                           type="button"
                           disabled={isPending}
                           onClick={() => handleApprove(ord.id)}
-                          className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-emerald-500 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1.5 rounded-xl bg-[#c8f33b] px-3.5 py-1.5 text-xs font-bold text-black shadow-xs hover:bg-[#b5e028] transition-all disabled:opacity-50 hover:shadow-[0_0_12px_rgba(200,243,59,0.3)]"
                         >
-                          <Check className="h-3.5 w-3.5" />
+                          {isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5 stroke-[3]" />
+                          )}
                           <span>Approve</span>
                         </button>
 
@@ -195,7 +212,7 @@ export function PaymentApprovalTable({ orders: initialOrders }: PaymentApprovalT
                           type="button"
                           disabled={isPending}
                           onClick={() => setRejectingOrderId(ord.id)}
-                          className="flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-950/40 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900/50 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-950/40 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900/60 transition-colors disabled:opacity-50"
                         >
                           <X className="h-3.5 w-3.5" />
                           <span>Reject</span>
@@ -210,77 +227,111 @@ export function PaymentApprovalTable({ orders: initialOrders }: PaymentApprovalT
         </div>
       )}
 
-      {/* Screenshot Zoom Modal */}
+      {/* Lightbox Receipt Screenshot Modal */}
       {previewScreenshotUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative max-h-[90vh] max-w-lg w-full overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <span className="text-xs font-semibold text-zinc-200">Payment Screenshot Preview</span>
-              <button
-                type="button"
-                onClick={() => setPreviewScreenshotUrl(null)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-md">
+          <div className="relative max-h-[90vh] max-w-2xl w-full rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-white">
+                Bank Transfer Screenshot Inspection
+              </span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewScreenshotUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg p-1.5 text-zinc-400 hover:text-white"
+                  title="Open full size"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewScreenshotUrl(null)}
+                  className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-            <div className="relative mt-3 aspect-[3/4] w-full overflow-hidden rounded-xl bg-zinc-900">
-              <Image
-                src={previewScreenshotUrl}
-                alt="Payment proof screenshot"
-                fill
-                className="object-contain"
-              />
+
+            <div className="mt-4 flex items-center justify-center overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 p-2">
+              <div className="relative h-[65vh] w-full">
+                <Image
+                  src={previewScreenshotUrl}
+                  alt="Customer Payment Receipt"
+                  fill
+                  className="object-contain"
+                />
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Reject Reason Modal */}
+      {/* Rejection Reason Modal */}
       {rejectingOrderId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <form
-            onSubmit={handleRejectSubmit}
-            className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-zinc-200 shadow-2xl"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
             <div className="flex items-center gap-2 text-rose-400">
               <AlertTriangle className="h-5 w-5" />
-              <h3 className="text-sm font-semibold text-zinc-100">Reject Payment & Release Stock</h3>
+              <h3 className="text-base font-bold text-white font-sans">
+                Reject UPI Settlement
+              </h3>
             </div>
             <p className="mt-2 text-xs text-zinc-400">
-              Specify why this transfer could not be validated. This message will be sent to the customer via SMS/Email:
+              Provide the exact reason why this payment was declined. The customer will receive this message via SMS and email.
             </p>
 
-            <textarea
-              required
-              rows={3}
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="e.g. Funds not reflected in merchant bank account; invalid 12-digit UTR."
-              className="mt-3 w-full rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-xs text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none"
-            />
+            <form onSubmit={handleRejectSubmit} className="mt-4 space-y-3">
+              {/* Preset Quick Chips */}
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  "UTR not matching ICICI bank statement",
+                  "Underpaid amount",
+                  "Duplicate UTR submitted",
+                ].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setRejectReason(preset)}
+                    className="rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-1 text-[10px] text-zinc-300 hover:border-zinc-700 hover:text-white transition-colors"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
 
-            <div className="mt-5 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setRejectingOrderId(null)}
-                className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-900 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isPending || !rejectReason.trim()}
-                className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-500 transition-colors disabled:opacity-50"
-              >
-                {isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <span>Confirm Rejection</span>
-                )}
-              </button>
-            </div>
-          </form>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="e.g. UTR 429182910291 was not found in ICICI bank records for the order amount."
+                rows={3}
+                required
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:border-rose-500/80 focus:outline-none"
+              />
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRejectingOrderId(null);
+                    setRejectReason("");
+                  }}
+                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending || !rejectReason.trim()}
+                  className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 transition-colors disabled:opacity-50"
+                >
+                  {isPending ? "Rejecting..." : "Confirm Rejection"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

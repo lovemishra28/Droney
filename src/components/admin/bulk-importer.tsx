@@ -224,21 +224,23 @@ export function BulkImporter() {
           <button
             type="button"
             onClick={downloadTemplate}
-            className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3.5 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700 hover:text-white"
+            className="flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-zinc-700 hover:text-white"
           >
-            <Download className="h-4 w-4 text-indigo-400" />
+            <Download className="h-4 w-4 text-[#c8f33b]" />
             <span>Download CSV Template</span>
           </button>
         </div>
 
         {/* Drag-and-Drop Dropzone */}
         <div className="mt-6">
-          <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950/60 p-8 text-center transition-colors hover:border-zinc-700 hover:bg-zinc-950">
-            <FileSpreadsheet className="h-10 w-10 text-indigo-400" />
-            <p className="mt-3 text-sm font-medium text-zinc-200">
+          <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950/60 p-8 text-center transition-all hover:border-[#c8f33b]/60 hover:bg-zinc-950 group">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 group-hover:border-[#c8f33b]/40 transition-colors">
+              <FileSpreadsheet className="h-6 w-6 text-[#c8f33b]" />
+            </div>
+            <p className="mt-3 text-sm font-semibold text-zinc-100 font-sans">
               {file ? file.name : "Select or drag .csv inventory spreadsheet"}
             </p>
-            <span className="mt-1 text-xs text-zinc-500">
+            <span className="mt-1 text-xs font-mono text-zinc-500">
               Supports UTF-8 CSV exports up to 600 SKUs per upload
             </span>
             <input
@@ -253,8 +255,8 @@ export function BulkImporter() {
 
       {/* Parsing Loader */}
       {isParsing && (
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 text-xs text-zinc-400">
-          <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
+        <div className="flex items-center justify-center gap-2.5 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 text-xs text-zinc-400 font-mono">
+          <Loader2 className="h-4 w-4 animate-spin text-[#c8f33b]" />
           <span>Parsing spreadsheet and checking schema constraints in browser...</span>
         </div>
       )}
@@ -326,11 +328,11 @@ export function BulkImporter() {
               type="button"
               disabled={isPending}
               onClick={handleCommitImport}
-              className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-indigo-500 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-[#c8f33b] px-5 py-2.5 text-xs font-bold text-black shadow-lg transition-all hover:bg-[#b5e028] disabled:opacity-50 hover:shadow-[0_0_15px_rgba(200,243,59,0.3)]"
             >
               {isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin text-black" />
                   <span>Ingesting Batch into PostgreSQL...</span>
                 </>
               ) : (
@@ -358,7 +360,7 @@ export function BulkImporter() {
                 <tbody className="divide-y divide-zinc-800/80 text-zinc-200">
                   {parsedRows.slice(0, 15).map((row, index) => (
                     <tr key={index} className="hover:bg-zinc-900/50">
-                      <td className="px-4 py-2.5 font-mono text-indigo-400 font-medium">
+                      <td className="px-4 py-2.5 font-mono text-white font-bold">
                         {row.sku}
                       </td>
                       <td className="px-4 py-2.5 max-w-[200px] truncate">{row.name}</td>

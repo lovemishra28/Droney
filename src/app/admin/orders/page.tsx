@@ -1,8 +1,12 @@
 import React from "react";
 import { desc } from "drizzle-orm";
-import { ShoppingBag } from "lucide-react";
 import { db } from "@/lib/db";
-import { orders } from "@/lib/db/schema";
+import {
+  orders,
+  type Order,
+  type OrderItem,
+  type User,
+} from "@/lib/db/schema";
 import { requireAdminSession } from "@/server/queries/admin";
 import {
   OrderFulfillmentManager,
@@ -14,7 +18,11 @@ export const dynamic = "force-dynamic";
 export default async function AdminOrdersPage() {
   await requireAdminSession();
 
-  let rawOrders: any[] = [];
+  type AdminOrderQueryRecord = Order & {
+    user: Pick<User, "fullName" | "phone" | "email"> | null;
+    items: OrderItem[];
+  };
+  let rawOrders: AdminOrderQueryRecord[] = [];
   try {
     rawOrders = await db.query.orders.findMany({
       orderBy: [desc(orders.createdAt)],
@@ -37,14 +45,14 @@ export default async function AdminOrdersPage() {
     customerEmail: ord.user?.email || null,
     totalAmountPaise: ord.totalAmountPaise,
     paymentMethod: ord.paymentMethod,
-    paymentStatus: ord.paymentStatus as any,
+    paymentStatus: ord.paymentStatus,
     upiTransactionId: ord.upiTransactionId,
-    orderStatus: ord.orderStatus as any,
+    orderStatus: ord.orderStatus,
     courierPartner: ord.courierPartner,
     trackingAwb: ord.trackingAwb,
     createdAt: ord.createdAt ? new Date(ord.createdAt).toISOString() : new Date().toISOString(),
     shippingAddress: ord.shippingAddress,
-    items: ord.items?.map((item: any) => ({
+    items: ord.items?.map((item) => ({
       title: item.title,
       quantity: item.quantity,
       unitPricePaise: item.unitPricePaise,
@@ -55,16 +63,19 @@ export default async function AdminOrdersPage() {
   return (
     <div className="space-y-6">
       {/* Workspace Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-indigo-400" />
-            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-              Order Fulfillment & Courier Dispatch
-            </h1>
+            <span className="flex h-2 w-2 rounded-full bg-[#c8f33b]" />
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#c8f33b]">
+              Fulfillment State Machine
+            </span>
           </div>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl font-sans">
+            Order Fulfillment & Courier Dispatch
+          </h1>
           <p className="mt-1 text-xs text-zinc-400">
-            Link Air Waybill (AWB) tracking codes, manage courier logistics, and generate GST tax invoices.
+            Link Air Waybill (AWB) tracking codes, manage courier logistics (Delhivery, Blue Dart), and generate GST tax invoices.
           </p>
         </div>
       </div>

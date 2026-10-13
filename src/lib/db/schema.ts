@@ -194,6 +194,92 @@ export const productMedia = pgTable(
 );
 
 // ============================================================================
+// 5B. PRODUCT SHOWCASE CINEMATIC STORYTELLING & TECH SPECS
+// ============================================================================
+
+export const productShowcases = pgTable("product_showcases", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  productId: uuid("product_id")
+    .references(() => products.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+
+  // Pricing & Commercial Overlays
+  mrpPricePaise: integer("mrp_price_paise"),
+  emiStartsFromPaise: integer("emi_starts_from_paise"),
+  warrantyMonths: integer("warranty_months").default(12),
+
+  // 1. Dark Hero Section
+  heroBadge: varchar("hero_badge", { length: 64 }),
+  heroHeadline: varchar("hero_headline", { length: 120 }),
+  heroSubtitle: text("hero_subtitle"),
+  heroExplodedLayoutUrl: text("hero_exploded_layout_url"),
+
+  // 4 Big Stat Metrics (JSONB)
+  keyMetrics: jsonb("key_metrics").$type<Array<{
+    value: string;
+    unit: string;
+    label: string;
+  }>>().default([]),
+
+  // 2. Cinematic Storytelling Feature Bento Blocks (JSONB)
+  storyBlocks: jsonb("story_blocks").$type<Array<{
+    id: string;
+    tag?: string;
+    title: string;
+    description: string;
+    specBadges?: string[];
+    mediaUrl: string;
+    alignment: "left" | "right" | "center";
+  }>>().default([]),
+
+  // 3. "Every angle." Multi-View Interactive Gallery (JSONB)
+  multiAngles: jsonb("multi_angles").$type<Array<{
+    label: string;
+    imageUrl: string;
+  }>>().default([]),
+
+  // 4. Comparison Module ("Air 3S vs Mavic 3 Pro") (JSONB)
+  comparisonData: jsonb("comparison_data").$type<{
+    targetModelName: string;
+    targetModelImage: string;
+    specRows: Array<{
+      label: string;
+      currentModelValue: string;
+      targetModelValue: string;
+    }>;
+  }>(),
+
+  // 5. "Need to know." Aviation/DGCA FAQs (JSONB)
+  regulatoryFaqs: jsonb("regulatory_faqs").$type<Array<{
+    question: string;
+    answer: string;
+  }>>().default([]),
+
+  // 6. Comprehensive Tech Specs Categories (JSONB)
+  techSpecsGrouped: jsonb("tech_specs_grouped").$type<Record<string, Record<string, string>>>().default({}),
+
+  // 7. "In the Box" Components (JSONB)
+  inTheBox: jsonb("in_the_box").$type<Array<{
+    name: string;
+    quantity: number;
+    imageUrl?: string;
+  }>>().default([]),
+
+  // 8. Frequently Bought Together Bundle IDs (Product UUIDs or custom items)
+  bundleProductIds: jsonb("bundle_product_ids").$type<string[]>().default([]),
+
+  // 9. Standard Customer FAQs
+  faqs: jsonb("faqs").$type<Array<{
+    question: string;
+    answer: string;
+  }>>().default([]),
+
+  // 10. Long-Form SEO Article (Bottom Summary for Google indexing)
+  longFormSeoArticle: text("long_form_seo_article"),
+});
+
+// ============================================================================
 // 6. ORDERS & DIRECT UPI QR VERIFICATION
 // ============================================================================
 
@@ -366,9 +452,23 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     references: [secondHandDetails.productId],
   }),
   media: many(productMedia),
+  showcase: one(productShowcases, {
+    fields: [products.id],
+    references: [productShowcases.productId],
+  }),
   orderItems: many(orderItems),
   stockReservations: many(stockReservations),
 }));
+
+export const productShowcasesRelations = relations(
+  productShowcases,
+  ({ one }) => ({
+    product: one(products, {
+      fields: [productShowcases.productId],
+      references: [products.id],
+    }),
+  })
+);
 
 export const droneSpecificationsRelations = relations(
   droneSpecifications,
@@ -464,6 +564,9 @@ export type NewSecondHandDetail = InferInsertModel<typeof secondHandDetails>;
 
 export type ProductMedia = InferSelectModel<typeof productMedia>;
 export type NewProductMedia = InferInsertModel<typeof productMedia>;
+
+export type ProductShowcase = InferSelectModel<typeof productShowcases>;
+export type NewProductShowcase = InferInsertModel<typeof productShowcases>;
 
 export type Order = InferSelectModel<typeof orders>;
 export type NewOrder = InferInsertModel<typeof orders>;

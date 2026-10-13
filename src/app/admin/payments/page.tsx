@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckSquare, ShieldCheck } from "lucide-react";
+import { Zap } from "lucide-react";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
@@ -66,21 +66,24 @@ export default async function AdminPaymentsPage() {
   return (
     <div className="space-y-6">
       {/* Workspace Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <CheckSquare className="h-5 w-5 text-emerald-400" />
-            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-              Direct UPI Payment Approvals
-            </h1>
+            <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-amber-400">
+              UPI Settlement Protocol
+            </span>
           </div>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl font-sans">
+            Direct UPI Payment Approvals
+          </h1>
           <p className="mt-1 text-xs text-zinc-400">
             Verify submitted 12-digit UTR codes against your bank statement before authorizing order dispatch.
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs text-zinc-300">
-          <ShieldCheck className="h-4 w-4 text-indigo-400" />
+        <div className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3.5 py-2 text-xs font-mono text-zinc-300">
+          <Zap className="h-4 w-4 text-[#c8f33b]" />
           <span>Zero Gateway Intermediary Mode Active</span>
         </div>
       </div>
