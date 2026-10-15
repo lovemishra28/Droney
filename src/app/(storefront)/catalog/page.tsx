@@ -129,6 +129,21 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     categoryLabel = "Pre-Owned Drones";
   }
 
+  const buildPageUrl = (targetPage: number) => {
+    const params = new URLSearchParams();
+    params.set("page", targetPage.toString());
+    if (categorySlug) params.set("category", categorySlug);
+    if (brand) params.set("brand", brand);
+    if (condition) params.set("condition", condition);
+    if (sort && sort !== "newest") params.set("sort", sort);
+    if (search) params.set("q", search);
+    if (minPriceInr !== undefined && !isNaN(minPriceInr))
+      params.set("minPrice", minPriceInr.toString());
+    if (maxPriceInr !== undefined && !isNaN(maxPriceInr))
+      params.set("maxPrice", maxPriceInr.toString());
+    return `/catalog?${params.toString()}`;
+  };
+
   return (
     <div className="min-h-screen bg-white text-zinc-900 py-10">
       <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8">
@@ -177,8 +192,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-          {/* Desktop Filter Sidebar */}
-          <div className="hidden lg:col-span-1 lg:block">
+          {/* Filter Sidebar (Mobile trigger + Desktop sidebar) */}
+          <div className="lg:col-span-1">
             <Suspense
               fallback={
                 <div className="w-full text-xs text-zinc-500">
@@ -225,9 +240,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                     <div className="flex items-center gap-2">
                       {pagination.hasPrevPage && (
                         <Link
-                          href={`/catalog?page=${pagination.page - 1}${
-                            categorySlug ? `&category=${categorySlug}` : ""
-                          }${sort ? `&sort=${sort}` : ""}`}
+                          href={buildPageUrl(pagination.page - 1)}
                           className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-black hover:bg-zinc-100 font-bold transition shadow-xs"
                         >
                           Previous
@@ -236,9 +249,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
                       {pagination.hasNextPage && (
                         <Link
-                          href={`/catalog?page=${pagination.page + 1}${
-                            categorySlug ? `&category=${categorySlug}` : ""
-                          }${sort ? `&sort=${sort}` : ""}`}
+                          href={buildPageUrl(pagination.page + 1)}
                           className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-black hover:bg-zinc-100 font-bold transition shadow-xs"
                         >
                           Next

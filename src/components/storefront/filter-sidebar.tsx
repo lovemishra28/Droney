@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Filter, RotateCcw } from "lucide-react";
+import { Filter, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 
 export interface CategoryOption {
   id: string;
@@ -19,6 +19,7 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const currentCategory = searchParams.get("category") || "";
   const currentBrand = searchParams.get("brand") || "";
@@ -51,28 +52,8 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
     Boolean(currentMinPrice) ||
     Boolean(currentMaxPrice);
 
-  return (
-    <aside className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 text-zinc-900 shadow-xs">
-      <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-black" />
-          <h2 className="text-xs font-bold tracking-wider text-black uppercase font-mono">
-            Filters
-          </h2>
-        </div>
-        {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="flex items-center gap-1 text-xs font-semibold text-zinc-500 hover:text-black transition"
-          >
-            <RotateCcw className="h-3 w-3" />
-            <span>Reset</span>
-          </button>
-        )}
-      </div>
-
-      <div className="mt-5 flex flex-col gap-6">
+  const renderFilterControls = () => (
+    <div className="flex flex-col gap-6">
         {/* Sort Ordering */}
         <div>
           <label
@@ -333,6 +314,107 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
           </div>
         </div>
       </div>
-    </aside>
+    );
+
+  return (
+    <>
+      {/* Mobile Drawer Trigger (DRN-048) */}
+      <div className="lg:hidden mb-4">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="flex w-full items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-bold text-zinc-900 shadow-xs hover:bg-zinc-100 transition"
+        >
+          <span className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-black" />
+            <span>Refine Fleet & Hardware</span>
+            {hasActiveFilters && (
+              <span className="rounded-full bg-[#c8f33b] px-2 py-0.5 text-[10px] font-mono font-bold text-black">
+                Active Filters
+              </span>
+            )}
+          </span>
+          <span className="text-[11px] font-semibold text-zinc-500 font-mono">
+            Filter +
+          </span>
+        </button>
+      </div>
+
+      {/* Mobile Drawer Modal (DRN-048) */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs lg:hidden">
+          <div className="h-full w-full max-w-xs sm:max-w-sm overflow-y-auto bg-white p-5 shadow-2xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between border-b border-zinc-200 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-black" />
+                  <h2 className="text-xs font-bold tracking-wider text-black uppercase font-mono">
+                    Catalog Filters
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  className="p-1 rounded-lg text-zinc-400 hover:text-black hover:bg-zinc-100 transition"
+                  aria-label="Close filters"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {renderFilterControls()}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-zinc-200 flex gap-2">
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleResetFilters();
+                    setMobileOpen(false);
+                  }}
+                  className="w-1/3 rounded-xl border border-zinc-300 py-2.5 text-xs font-bold text-zinc-700 hover:bg-zinc-100 transition text-center"
+                >
+                  Reset
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                className="flex-1 rounded-xl bg-black py-2.5 text-xs font-bold text-white hover:bg-zinc-800 transition text-center"
+              >
+                Apply & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Filter Sidebar */}
+      <aside className="hidden lg:block w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 text-zinc-900 shadow-xs">
+        <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-black" />
+            <h2 className="text-xs font-bold tracking-wider text-black uppercase font-mono">
+              Filters
+            </h2>
+          </div>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="flex items-center gap-1 text-xs font-semibold text-zinc-500 hover:text-black transition"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Reset</span>
+            </button>
+          )}
+        </div>
+
+        <div className="mt-5">
+          {renderFilterControls()}
+        </div>
+      </aside>
+    </>
   );
 }

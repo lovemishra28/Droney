@@ -98,7 +98,12 @@ export async function getProducts(params: CatalogFilterParams = {}) {
     motorKv,
   } = params;
 
-  const offset = (page - 1) * pageSize;
+  const safePage = Math.max(1, Number.parseInt(String(page), 10) || 1);
+  const safePageSize = Math.max(
+    1,
+    Math.min(100, Number.parseInt(String(pageSize), 10) || 24)
+  );
+  const offset = (safePage - 1) * safePageSize;
 
   const conditions = [eq(products.status, "active")];
 
@@ -116,6 +121,22 @@ export async function getProducts(params: CatalogFilterParams = {}) {
 
   if (maxPricePaise !== undefined) {
     conditions.push(lte(products.basePricePaise, maxPricePaise));
+  }
+
+  if (cosmeticGrades && cosmeticGrades.length > 0) {
+    const subquery = db
+      .select({ productId: secondHandDetails.productId })
+      .from(secondHandDetails)
+      .where(inArray(secondHandDetails.cosmeticGrade, cosmeticGrades));
+    conditions.push(inArray(products.id, subquery));
+  }
+
+  if (motorKv && motorKv.trim().length > 0) {
+    const subquery = db
+      .select({ productId: droneSpecifications.productId })
+      .from(droneSpecifications)
+      .where(ilike(droneSpecifications.motorKv, `%${motorKv.trim()}%`));
+    conditions.push(inArray(products.id, subquery));
   }
 
   if (search && search.trim().length > 0) {
@@ -178,7 +199,7 @@ export async function getProducts(params: CatalogFilterParams = {}) {
     const [data, totalCountResult] = await Promise.all([
       db.query.products.findMany({
         where: whereClause,
-        limit: pageSize,
+        limit: safePageSize,
         offset,
         orderBy: orderByClause,
         with: {
@@ -197,38 +218,18 @@ export async function getProducts(params: CatalogFilterParams = {}) {
         .where(whereClause),
     ]);
 
-    let filteredItems = data;
-
-    if (cosmeticGrades && cosmeticGrades.length > 0) {
-      filteredItems = filteredItems.filter(
-        (item) =>
-          item.secondHandDetails &&
-          cosmeticGrades.includes(
-            item.secondHandDetails.cosmeticGrade as "A" | "B" | "C"
-          )
-      );
-    }
-
-    if (motorKv) {
-      filteredItems = filteredItems.filter((item) =>
-        item.specifications?.motorKv
-          ?.toLowerCase()
-          .includes(motorKv.toLowerCase())
-      );
-    }
-
     const totalCount = totalCountResult[0]?.count ?? 0;
-    const totalPages = Math.ceil(totalCount / pageSize);
+    const totalPages = Math.ceil(totalCount / safePageSize);
 
     return {
-      data: filteredItems,
+      data,
       pagination: {
-        page,
-        pageSize,
+        page: safePage,
+        pageSize: safePageSize,
         totalCount,
         totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
+        hasNextPage: safePage < totalPages,
+        hasPrevPage: safePage > 1,
       },
     };
   } catch (error) {
