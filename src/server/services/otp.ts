@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 
 const OTP_TTL_SECONDS = 300; // 5 Minutes TTL
 const MAX_VERIFY_ATTEMPTS = 5; // Maximum incorrect attempts before invalidation
+const VERIFIED_REGISTRATION_TTL_SECONDS = 300;
 
 export interface OtpGenerateResult {
   code: string;
@@ -105,4 +106,23 @@ export async function verifyAndInvalidateOtp(
   await Promise.all([redis.del(otpKey), redis.del(attemptsKey)]);
 
   return { success: true };
+}
+
+export async function markRegistrationVerified(identifier: string): Promise<void> {
+  await redis.set(
+    `otp:verified-registration:${identifier.trim().toLowerCase()}`,
+    "verified",
+    { ex: VERIFIED_REGISTRATION_TTL_SECONDS }
+  );
+}
+
+export async function consumeVerifiedRegistration(
+  identifier: string
+): Promise<boolean> {
+  const key = `otp:verified-registration:${identifier.trim().toLowerCase()}`;
+  const verified = await redis.get<string>(key);
+  if (!verified) return false;
+
+  await redis.del(key);
+  return true;
 }

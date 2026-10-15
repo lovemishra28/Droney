@@ -11,6 +11,12 @@ export interface UserSessionState {
   isLoading: boolean;
 }
 
+export const AUTH_STATE_CHANGED_EVENT = "altitude:auth-state-changed";
+
+export function notifyAuthStateChanged() {
+  window.dispatchEvent(new Event(AUTH_STATE_CHANGED_EVENT));
+}
+
 /**
  * React hook to access active session status and role in client components.
  */
@@ -25,29 +31,36 @@ export function useUserSession(): UserSessionState {
 
   useEffect(() => {
     let mounted = true;
-    getClientSessionAction()
-      .then((res) => {
-        if (mounted) {
-          setSession({
-            ...res,
-            isLoading: false,
-          });
-        }
-      })
-      .catch(() => {
-        if (mounted) {
-          setSession({
-            isAuthenticated: false,
-            role: null,
-            userId: null,
-            fullName: null,
-            isLoading: false,
-          });
-        }
-      });
+
+    const refreshSession = () => {
+      getClientSessionAction()
+        .then((res) => {
+          if (mounted) {
+            setSession({
+              ...res,
+              isLoading: false,
+            });
+          }
+        })
+        .catch(() => {
+          if (mounted) {
+            setSession({
+              isAuthenticated: false,
+              role: null,
+              userId: null,
+              fullName: null,
+              isLoading: false,
+            });
+          }
+        });
+    };
+
+    refreshSession();
+    window.addEventListener(AUTH_STATE_CHANGED_EVENT, refreshSession);
 
     return () => {
       mounted = false;
+      window.removeEventListener(AUTH_STATE_CHANGED_EVENT, refreshSession);
     };
   }, []);
 

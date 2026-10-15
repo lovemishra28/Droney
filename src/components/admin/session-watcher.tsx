@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { logoutAction } from "@/server/actions/auth";
+import { notifyAuthStateChanged } from "@/lib/auth-client";
 
 const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes session expiration
 
@@ -18,6 +19,7 @@ export function SessionWatcher() {
     timerRef.current = setTimeout(async () => {
       console.warn("[Security]: Admin session timed out due to 60 minutes of inactivity.");
       await logoutAction();
+      notifyAuthStateChanged();
       router.push("/login?reason=timeout");
       router.refresh();
     }, INACTIVITY_TIMEOUT_MS);

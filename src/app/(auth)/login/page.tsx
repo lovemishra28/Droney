@@ -4,8 +4,12 @@ import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ShieldCheck, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
-import { requestOtpAction, verifyOtpAction } from "@/server/actions/auth";
+import { ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  completeRegistrationAction,
+  requestOtpAction,
+  verifyOtpAction,
+} from "@/server/actions/auth";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -19,7 +23,7 @@ function LoginForm() {
   const [otp, setOtp] = useState("");
 
   const [otpSent, setOtpSent] = useState(false);
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [requiresName, setRequiresName] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
 
   const [sendingOtp, setSendingOtp] = useState(false);
@@ -62,10 +66,6 @@ function LoginForm() {
       } else {
         setOtpSent(true);
         setResendTimer(30);
-        setIsNewUser(!!res.data?.isNewUser);
-        if (res.data?.isNewUser) {
-          setMode("signup");
-        }
         setInfoMessage(
           `Verification code sent to ${
             authMethod === "phone" ? `+91 ${phoneDigits}` : emailInput
@@ -94,21 +94,23 @@ function LoginForm() {
       return;
     }
 
-    if ((mode === "signup" || isNewUser) && fullName.trim().length < 2) {
-      setError("Please enter your full name to complete registration.");
-      return;
-    }
-
     setVerifying(true);
     try {
       const res = await verifyOtpAction({
         identifier: currentIdentifier,
         otp: otp.trim(),
-        fullName: fullName.trim() || undefined,
+        fullName: undefined,
       });
 
       if (!res.success) {
         setError(res.message || "Verification failed. Please try again.");
+        return;
+      }
+
+      if (res.data?.requiresName) {
+        setRequiresName(true);
+        setOtp("");
+        setInfoMessage("OTP verified. Enter your name to finish creating your account.");
         return;
       }
 
@@ -130,6 +132,38 @@ function LoginForm() {
       );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Authentication error.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleCompleteRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (fullName.trim().length < 2) {
+      setError("Please enter your full name to complete registration.");
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const res = await completeRegistrationAction({
+        identifier: currentIdentifier,
+        fullName,
+      });
+
+      if (!res.success) {
+        setError(res.message || "Could not complete registration.");
+        return;
+      }
+
+      const callbackUrl = searchParams.get("callbackUrl");
+      const destination =
+        callbackUrl && !callbackUrl.startsWith("/admin") ? callbackUrl : "/";
+      window.location.assign(new URL(destination, window.location.origin).toString());
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Registration error.");
     } finally {
       setVerifying(false);
     }
@@ -157,10 +191,12 @@ function LoginForm() {
         {/* Title & Subtitle */}
         <div className="space-y-1.5">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900">
-            {mode === "signup" ? "Create your account" : "Welcome back"}
+            {requiresName ? "Finish creating your account" : mode === "signup" ? "Create your account" : "Welcome back"}
           </h2>
           <p className="text-xs sm:text-sm text-zinc-500">
-            {mode === "signup"
+            {requiresName
+              ? "Enter your name to finish signing in."
+              : mode === "signup"
               ? "Enter your details to register as an Altitude pilot."
               : "Please enter your details to sign in."}
           </p>
@@ -182,9 +218,8 @@ function LoginForm() {
           </div>
         )}
 
-        <form onSubmit={handleVerify} className="space-y-4">
-          {/* Full Name Field (shown if creating account or identified as new pilot) */}
-          {(mode === "signup" || isNewUser) && (
+        {requiresName ? (
+          <form onSubmit={handleCompleteRegistration} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-700">
                 Full Name <span className="text-red-500">*</span>
@@ -192,48 +227,28 @@ function LoginForm() {
               <input
                 type="text"
                 required
+                autoFocus
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="e.g. Rohit Sharma"
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition shadow-2xs font-medium"
               />
             </div>
-          )}
-
+            <button
+              type="submit"
+              disabled={verifying || fullName.trim().length < 2}
+              className="w-full rounded-lg bg-black text-white py-3 text-sm font-bold font-tech tracking-wider uppercase transition hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
+            >
+              {verifying ? "Creating account..." : "Continue"}
+            </button>
+          </form>
+        ) : (
+        <form onSubmit={handleVerify} className="space-y-4">
           {/* Phone / Email Input Group */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-700">
-                {authMethod === "phone" ? "Phone Number" : "Email Address"}
-              </label>
-              {authMethod === "phone" ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod("email");
-                    setOtpSent(false);
-                    setError(null);
-                    setInfoMessage(null);
-                  }}
-                  className="text-[11px] font-medium text-zinc-500 hover:text-black underline transition"
-                >
-                  Use email instead
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod("phone");
-                    setOtpSent(false);
-                    setError(null);
-                    setInfoMessage(null);
-                  }}
-                  className="text-[11px] font-medium text-zinc-500 hover:text-black underline transition"
-                >
-                  Use phone number
-                </button>
-              )}
-            </div>
+            <label className="text-xs font-semibold text-zinc-700">
+              Phone Number
+            </label>
 
             {authMethod === "phone" ? (
               <div className="flex items-center gap-2">
@@ -334,41 +349,7 @@ function LoginForm() {
             )}
           </button>
         </form>
-
-        {/* Bottom Mode Switch */}
-        <div className="text-center text-xs text-zinc-500 pt-1">
-          {mode === "signin" ? (
-            <p>
-              Don&apos;t have an account?{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("signup");
-                  setError(null);
-                  setInfoMessage(null);
-                }}
-                className="font-bold text-black hover:underline cursor-pointer"
-              >
-                Sign up for free
-              </button>
-            </p>
-          ) : (
-            <p>
-              Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("signin");
-                  setError(null);
-                  setInfoMessage(null);
-                }}
-                className="font-bold text-black hover:underline cursor-pointer"
-              >
-                Sign in
-              </button>
-            </p>
-          )}
-        </div>
+        )}
 
         {/* Legal Disclaimer */}
         <div className="pt-4 border-t border-zinc-100 text-center text-[11px] text-zinc-400 leading-relaxed">

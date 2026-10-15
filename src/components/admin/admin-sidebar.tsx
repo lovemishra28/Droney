@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { logoutAction } from "@/server/actions/auth";
+import { notifyAuthStateChanged } from "@/lib/auth-client";
 import { useAdminTheme } from "@/components/admin/admin-theme-provider";
 
 interface AdminSidebarProps {
@@ -219,6 +220,7 @@ export function AdminSidebar({
           <form
             action={async () => {
               await logoutAction();
+              notifyAuthStateChanged();
             }}
           >
             <button

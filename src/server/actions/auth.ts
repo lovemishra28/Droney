@@ -8,6 +8,8 @@ import { users } from "@/lib/db/schema";
 import { identifierOtpRateLimiter, ipOtpRateLimiter } from "@/lib/redis";
 import {
   createAndStoreOtp,
+  consumeVerifiedRegistration,
+  markRegistrationVerified,
   verifyAndInvalidateOtp,
 } from "@/server/services/otp";
 import {
@@ -116,7 +118,13 @@ export async function requestOtpAction(
  */
 export async function verifyOtpAction(
   rawInput: VerifyOtpInput
-): Promise<ActionResponse<{ userId: string; role: string }>> {
+): Promise<
+  ActionResponse<{
+    userId?: string;
+    role?: string;
+    requiresName?: boolean;
+  }>
+> {
   const parsed = verifyOtpSchema.safeParse(rawInput);
   if (!parsed.success) {
     return {
@@ -164,9 +172,11 @@ export async function verifyOtpAction(
 
   if (!user) {
     if (!fullName || fullName.trim().length < 2) {
+      await markRegistrationVerified(normalized);
       return {
-        success: false,
-        message: "Full name is required for new accounts.",
+        success: true,
+        message: "OTP verified. Please enter your name to complete registration.",
+        data: { requiresName: true },
       };
     }
 
@@ -197,6 +207,62 @@ export async function verifyOtpAction(
       userId: user.id,
       role: user.role,
     },
+  };
+}
+
+export async function completeRegistrationAction(
+  rawInput: { identifier: string; fullName: string }
+): Promise<ActionResponse<{ userId: string; role: string }>> {
+  const parsedIdentifier = requestOtpSchema.shape.identifier.safeParse(
+    rawInput.identifier
+  );
+  const fullName = rawInput.fullName?.trim();
+
+  if (!parsedIdentifier.success || !fullName || fullName.length < 2) {
+    return { success: false, message: "Please provide a valid name and identifier." };
+  }
+
+  const parsedIdent = parseIdentifier(parsedIdentifier.data);
+  const normalized = parsedIdent.normalized;
+  if (!(await consumeVerifiedRegistration(normalized))) {
+    return {
+      success: false,
+      message: "Registration verification expired. Please request a new OTP.",
+    };
+  }
+
+  const phoneVariant =
+    parsedIdent.type === "phone" ? normalized.replace("+91", "") : null;
+  let user = await db.query.users.findFirst({
+    where:
+      parsedIdent.type === "phone"
+        ? or(eq(users.phone, normalized), eq(users.phone, phoneVariant!))
+        : eq(users.email, normalized),
+  });
+
+  if (!user) {
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        fullName,
+        phone: parsedIdent.type === "phone" ? normalized : null,
+        email: parsedIdent.type === "email" ? normalized : null,
+        role: "customer",
+      })
+      .returning();
+    user = newUser;
+  }
+
+  await createSessionCookie({
+    id: user.id,
+    fullName: user.fullName,
+    role: user.role,
+  });
+
+  return {
+    success: true,
+    message: "Registration complete.",
+    data: { userId: user.id, role: user.role },
   };
 }
 
@@ -266,4 +332,3 @@ export async function getClientSessionAction(): Promise<{
     fullName: session.fullName || null,
   };
 }
-
