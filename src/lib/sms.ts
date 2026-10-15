@@ -98,3 +98,56 @@ export async function sendOtpSms(
     };
   }
 }
+
+/**
+ * Dispatches non-OTP order status notifications (e.g. order placed, payment approved, shipped).
+ */
+export async function sendOrderAlertSms(
+  phone: string,
+  message: string
+): Promise<SendSmsResult> {
+  const sanitizedPhone = sanitizeIndianPhone(phone);
+  if (!sanitizedPhone) {
+    return { success: false, error: "Invalid 10-digit Indian phone number" };
+  }
+
+  if (env.NODE_ENV === "development") {
+    console.info(
+      `[Development Order SMS] to +91${sanitizedPhone}: ${message}`
+    );
+    return {
+      success: true,
+      messageId: "development-terminal-order-sms",
+    };
+  }
+
+  try {
+    const payload = {
+      route: "q",
+      message,
+      flash: 0,
+      numbers: sanitizedPhone,
+    };
+
+    const response = await fetch(env.FAST2SMS_API_URL, {
+      method: "POST",
+      headers: {
+        authorization: env.FAST2SMS_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    return {
+      success: response.ok && data.return !== false,
+      messageId: data.request_id || undefined,
+    };
+  } catch (error) {
+    console.error("[Fast2SMS Order Alert Failure]:", error);
+    return {
+      success: false,
+      error: "Failed to dispatch order SMS alert.",
+    };
+  }
+}

@@ -6,6 +6,7 @@ import {
 } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -42,6 +43,7 @@ export const paymentMethodEnum = pgEnum("payment_method", [
 ]);
 
 export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending_payment",
   "awaiting_verification",
   "paid",
   "rejected",
@@ -156,6 +158,8 @@ export const products = pgTable(
     index("idx_products_category_status").on(table.categoryId, table.status),
     index("idx_products_price").on(table.basePricePaise),
     index("idx_products_second_hand").on(table.isSecondHand, table.status),
+    check("chk_stock_nonneg", sql`${table.stockQuantity} >= 0`),
+    check("chk_price_nonneg", sql`${table.basePricePaise} >= 0`),
   ]
 );
 
@@ -329,7 +333,7 @@ export const orders = pgTable(
   "orders",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    orderReference: varchar("order_reference", { length: 24 })
+    orderReference: varchar("order_reference", { length: 32 })
       .notNull()
       .unique(), // e.g., "ORD-82914"
     userId: uuid("user_id")
@@ -345,7 +349,7 @@ export const orders = pgTable(
       .default("upi_qr")
       .notNull(),
     paymentStatus: paymentStatusEnum("payment_status")
-      .default("awaiting_verification")
+      .default("pending_payment")
       .notNull(),
     upiTransactionId: varchar("upi_transaction_id", { length: 64 }), // Bank 12-digit UTR
     paymentScreenshotUrl: text("payment_screenshot_url"),
@@ -375,6 +379,7 @@ export const orders = pgTable(
     index("idx_orders_payment_status").on(table.paymentStatus),
     index("idx_orders_order_status").on(table.orderStatus),
     index("idx_orders_created").on(table.createdAt),
+    check("chk_total_nonneg", sql`${table.totalAmountPaise} >= 0`),
   ]
 );
 
@@ -396,6 +401,8 @@ export const orderItems = pgTable(
   (table) => [
     index("idx_order_items_order").on(table.orderId),
     index("idx_order_items_product").on(table.productId),
+    check("chk_qty_positive", sql`${table.quantity} > 0`),
+    check("chk_unit_nonneg", sql`${table.unitPricePaise} >= 0`),
   ]
 );
 
@@ -407,6 +414,9 @@ export const stockReservations = pgTable(
   "stock_reservations",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    orderId: uuid("order_id").references(() => orders.id, {
+      onDelete: "cascade",
+    }),
     productId: uuid("product_id")
       .references(() => products.id, { onDelete: "cascade" })
       .notNull(),
@@ -424,6 +434,8 @@ export const stockReservations = pgTable(
   (table) => [
     index("idx_stock_reservations_expiry").on(table.reservedUntil),
     index("idx_stock_reservations_product").on(table.productId),
+    index("idx_stock_reservations_order").on(table.orderId),
+    check("chk_res_positive", sql`${table.quantity} > 0`),
   ]
 );
 
@@ -542,6 +554,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     references: [users.id],
   }),
   items: many(orderItems),
+  reservations: many(stockReservations),
   verifier: one(users, {
     fields: [orders.verifiedBy],
     references: [users.id],
@@ -569,6 +582,10 @@ export const stockReservationsRelations = relations(
     user: one(users, {
       fields: [stockReservations.userId],
       references: [users.id],
+    }),
+    order: one(orders, {
+      fields: [stockReservations.orderId],
+      references: [orders.id],
     }),
   })
 );

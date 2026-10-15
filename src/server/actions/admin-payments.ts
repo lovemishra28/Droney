@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
@@ -12,8 +12,8 @@ import {
   stockReservations,
 } from "@/lib/db/schema";
 import { requireAdminSession } from "@/server/queries/admin";
-import { sendOtpSms } from "@/lib/sms";
-import { sendOtpEmail } from "@/lib/email";
+import { sendOrderAlertSms } from "@/lib/sms";
+import { sendTransactionalEmail } from "@/lib/email";
 import { formatINR } from "@/lib/utils";
 import type { ActionResponse } from "@/server/actions/auth";
 
@@ -32,9 +32,9 @@ const rejectPaymentSchema = z.object({
 
 /**
  * Approves a pending direct UPI transaction:
- * 1. Transitions payment_status to 'paid' and order_status to 'processing'.
- * 2. Permanently decrements physical product stock in PostgreSQL.
- * 3. Clears temporary inventory reservations.
+ * 1. Transitions payment_status to 'paid' and order_status to 'processing' idempotently.
+ * 2. Permanently decrements physical product stock in PostgreSQL with non-negative guard.
+ * 3. Clears temporary inventory reservations scoped to this order.
  * 4. Records an immutable administrative audit log.
  * 5. Dispatches customer confirmation SMS & Email.
  */
@@ -75,8 +75,8 @@ export async function approvePaymentAction(
 
     // Execute atomic reconciliation transaction
     await db.transaction(async (tx) => {
-      // 1. Update Order Status
-      await tx
+      // 1. Idempotently update Order Status (conditional on paymentStatus != 'paid')
+      const [updatedOrder] = await tx
         .update(orders)
         .set({
           paymentStatus: "paid",
@@ -85,7 +85,12 @@ export async function approvePaymentAction(
           verifiedBy: session.sub,
           updatedAt: new Date(),
         })
-        .where(eq(orders.id, orderId));
+        .where(and(eq(orders.id, orderId), ne(orders.paymentStatus, "paid")))
+        .returning();
+
+      if (!updatedOrder) {
+        return;
+      }
 
       // 2. Permanently decrement physical stock & purge reservation locks
       for (const item of targetOrder.items) {
@@ -95,14 +100,22 @@ export async function approvePaymentAction(
             stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`,
             updatedAt: new Date(),
           })
-          .where(eq(products.id, item.productId));
+          .where(
+            and(
+              eq(products.id, item.productId),
+              gte(products.stockQuantity, item.quantity)
+            )
+          );
 
         await tx
           .delete(stockReservations)
           .where(
             and(
               eq(stockReservations.productId, item.productId),
-              eq(stockReservations.userId, targetOrder.userId)
+              or(
+                eq(stockReservations.orderId, targetOrder.id),
+                eq(stockReservations.userId, targetOrder.userId)
+              )
             )
           );
       }
@@ -128,22 +141,25 @@ export async function approvePaymentAction(
     const purge = revalidateTag as (tag: string, profile?: any) => void;
     purge("catalog");
 
-    // 5. Customer Notification Dispatch
+    // 5. Customer Notification Dispatch (DRN-050)
     const customer = targetOrder.user;
     const amountStr = formatINR(targetOrder.totalAmountPaise);
 
-    if (customer.phone) {
-      void sendOtpSms(
+    if (customer?.phone) {
+      void sendOrderAlertSms(
         customer.phone,
         `Payment of ${amountStr} for Order #${targetOrder.orderReference} has been verified. Your drone package is now preparing for air dispatch.`
       );
     }
 
-    if (customer.email) {
-      void sendOtpEmail(
-        customer.email,
-        `Your UPI payment for Order #${targetOrder.orderReference} (${amountStr}) has been approved. Tracking details will follow shortly upon dispatch.`
-      );
+    if (customer?.email) {
+      void sendTransactionalEmail({
+        toEmail: customer.email,
+        subject: `Payment Approved for Order #${targetOrder.orderReference}`,
+        heading: "Payment Verified & Order Confirmed",
+        body: `Your UPI payment for Order #${targetOrder.orderReference} (${amountStr}) has been approved. Tracking details will follow shortly upon dispatch.`,
+        orderReference: targetOrder.orderReference,
+      });
     }
 
     return {
@@ -161,10 +177,11 @@ export async function approvePaymentAction(
 
 /**
  * Rejects an invalid or fraudulent UTR submission:
- * 1. Transitions payment_status to 'rejected'.
- * 2. Releases held inventory back to public stock immediately.
- * 3. Records administrative audit log with the provided rejection reason.
- * 4. Notifies the customer via SMS/Email prompting UTR re-submission.
+ * 1. Transitions payment_status to 'rejected' idempotently.
+ * 2. Restocks products if the order was previously marked 'paid'.
+ * 3. Releases held inventory strictly scoped to this order (DRN-030).
+ * 4. Records administrative audit log with the provided rejection reason.
+ * 5. Notifies the customer via SMS/Email prompting UTR re-submission.
  */
 export async function rejectPaymentAction(
   rawInput: z.infer<typeof rejectPaymentSchema>
@@ -194,10 +211,17 @@ export async function rejectPaymentAction(
       return { success: false, message: "Order not found." };
     }
 
+    if (targetOrder.paymentStatus === "rejected") {
+      return {
+        success: false,
+        message: "Payment for this order has already been marked as rejected.",
+      };
+    }
+
     // Execute atomic rejection transaction
     await db.transaction(async (tx) => {
-      // 1. Update Order Status to 'rejected'
-      await tx
+      // 1. Update Order Status to 'rejected' idempotently
+      const [updatedOrder] = await tx
         .update(orders)
         .set({
           paymentStatus: "rejected",
@@ -205,12 +229,43 @@ export async function rejectPaymentAction(
           verifiedBy: session.sub,
           updatedAt: new Date(),
         })
-        .where(eq(orders.id, orderId));
+        .where(
+          and(eq(orders.id, orderId), ne(orders.paymentStatus, "rejected"))
+        )
+        .returning();
 
-      // 2. Release temporary reservations so items become available to other buyers
+      if (!updatedOrder) {
+        return;
+      }
+
+      // If previous status was 'paid', stock was already decremented - restock!
+      if (targetOrder.paymentStatus === "paid") {
+        for (const item of targetOrder.items) {
+          await tx
+            .update(products)
+            .set({
+              stockQuantity: sql`${products.stockQuantity} + ${item.quantity}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(products.id, item.productId));
+        }
+      }
+
+      // 2. Release temporary reservations strictly scoped to this order (DRN-030)
       await tx
         .delete(stockReservations)
-        .where(eq(stockReservations.userId, targetOrder.userId));
+        .where(
+          or(
+            eq(stockReservations.orderId, targetOrder.id),
+            and(
+              eq(stockReservations.userId, targetOrder.userId),
+              inArray(
+                stockReservations.productId,
+                targetOrder.items.map((i) => i.productId)
+              )
+            )
+          )
+        );
 
       // 3. Log Audit Record
       await tx.insert(auditLogs).values({
@@ -233,21 +288,24 @@ export async function rejectPaymentAction(
     const purge = revalidateTag as (tag: string, profile?: any) => void;
     purge("catalog");
 
-    // 5. Customer Notification Dispatch
+    // 5. Customer Notification Dispatch (DRN-050)
     const customer = targetOrder.user;
 
-    if (customer.phone) {
-      void sendOtpSms(
+    if (customer?.phone) {
+      void sendOrderAlertSms(
         customer.phone,
         `Payment verification issue for Order #${targetOrder.orderReference}: ${reason}. Please log in to re-submit your valid 12-digit UTR.`
       );
     }
 
-    if (customer.email) {
-      void sendOtpEmail(
-        customer.email,
-        `Your payment for Order #${targetOrder.orderReference} could not be verified. Reason: "${reason}". Please visit your order tracking page to enter the correct transaction reference.`
-      );
+    if (customer?.email) {
+      void sendTransactionalEmail({
+        toEmail: customer.email,
+        subject: `Payment Verification Issue - Order #${targetOrder.orderReference}`,
+        heading: "Payment Verification Issue",
+        body: `Your payment for Order #${targetOrder.orderReference} could not be verified. Reason: "${reason}". Please visit your order tracking page to enter the correct transaction reference.`,
+        orderReference: targetOrder.orderReference,
+      });
     }
 
     return {

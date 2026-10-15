@@ -39,7 +39,7 @@ export interface AdminMetricsSummary {
     customerName: string;
     customerPhone: string | null;
     totalAmountPaise: number;
-    paymentStatus: "awaiting_verification" | "paid" | "rejected";
+    paymentStatus: "pending_payment" | "awaiting_verification" | "paid" | "rejected";
     orderStatus: "placed" | "processing" | "shipped" | "delivered" | "cancelled";
     createdAt: Date;
   }>;
@@ -109,7 +109,11 @@ export async function getAdminOverviewMetrics(): Promise<AdminMetricsSummary> {
       customerName: ord.user?.fullName || "Guest Customer",
       customerPhone: ord.user?.phone || null,
       totalAmountPaise: ord.totalAmountPaise,
-      paymentStatus: ord.paymentStatus as "awaiting_verification" | "paid" | "rejected",
+      paymentStatus: ord.paymentStatus as
+        | "pending_payment"
+        | "awaiting_verification"
+        | "paid"
+        | "rejected",
       orderStatus: ord.orderStatus as "placed" | "processing" | "shipped" | "delivered" | "cancelled",
       createdAt: ord.createdAt,
     }));

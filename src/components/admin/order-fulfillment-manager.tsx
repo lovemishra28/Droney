@@ -22,7 +22,11 @@ export interface AdminOrderRecord {
   customerEmail?: string | null;
   totalAmountPaise: number;
   paymentMethod: string;
-  paymentStatus: "awaiting_verification" | "paid" | "rejected";
+  paymentStatus:
+    | "pending_payment"
+    | "awaiting_verification"
+    | "paid"
+    | "rejected";
   upiTransactionId?: string | null;
   orderStatus: "placed" | "processing" | "shipped" | "delivered" | "cancelled";
   courierPartner?: string | null;

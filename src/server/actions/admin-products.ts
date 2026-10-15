@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
@@ -818,45 +818,82 @@ export async function toggleProductStatusAction(
  * showcases, and dependent line items in a single ACID transaction.
  */
 export async function deleteAllProductsAction(): Promise<
-  ActionResponse<{ deletedCount: number }>
+  ActionResponse<{ deletedCount: number; archivedCount: number }>
 > {
   const session = await requireAdminSession();
 
   try {
-    const deletedCount = await db.transaction(async (tx) => {
+    const { deletedCount, archivedCount } = await db.transaction(async (tx) => {
       // 1. Count existing products
       const existing = await tx.select({ id: products.id }).from(products);
       const count = existing.length;
 
       if (count === 0) {
-        return 0;
+        return { deletedCount: 0, archivedCount: 0 };
       }
 
-      // 2. Remove dependent order items (which have ON DELETE RESTRICT on product_id)
-      await tx.delete(orderItems);
+      // 2. Identify products that have order items (they have ON DELETE RESTRICT on product_id)
+      // Never delete orderItems: this destroys historical orders and financial records (DRN-003)
+      const orderedItems = await tx
+        .selectDistinct({ productId: orderItems.productId })
+        .from(orderItems);
+      const orderedProductIds = orderedItems.map((r) => r.productId);
 
-      // 3. Clear active stock reservations
-      await tx.delete(stockReservations);
+      // Transition products with order history to 'archived'
+      if (orderedProductIds.length > 0) {
+        await tx
+          .update(products)
+          .set({ status: "archived", updatedAt: new Date() })
+          .where(inArray(products.id, orderedProductIds));
+      }
 
-      // 4. Clear drone specifications, secondhand details, media, showcases
-      await tx.delete(droneSpecifications);
-      await tx.delete(secondHandDetails);
-      await tx.delete(productMedia);
-      await tx.delete(productShowcases);
+      // Products without order history can be safely deleted
+      const deletableProductIds = existing
+        .map((p) => p.id)
+        .filter((id) => !orderedProductIds.includes(id));
 
-      // 5. Delete all products
-      await tx.delete(products);
+      if (deletableProductIds.length > 0) {
+        // Clear active stock reservations for deletable products
+        await tx
+          .delete(stockReservations)
+          .where(inArray(stockReservations.productId, deletableProductIds));
 
-      // 6. Record audit log
+        // Clear drone specifications, secondhand details, media, showcases
+        await tx
+          .delete(droneSpecifications)
+          .where(inArray(droneSpecifications.productId, deletableProductIds));
+        await tx
+          .delete(secondHandDetails)
+          .where(inArray(secondHandDetails.productId, deletableProductIds));
+        await tx
+          .delete(productMedia)
+          .where(inArray(productMedia.productId, deletableProductIds));
+        await tx
+          .delete(productShowcases)
+          .where(inArray(productShowcases.productId, deletableProductIds));
+
+        // Delete unreferenced products
+        await tx
+          .delete(products)
+          .where(inArray(products.id, deletableProductIds));
+      }
+
+      // 3. Record audit log
       await tx.insert(auditLogs).values({
         adminId: session.sub,
         action: "DELETE_ALL_PRODUCTS",
         entityName: "products",
         entityId: "ALL",
-        payload: { deletedCount: count },
+        payload: {
+          deletableCount: deletableProductIds.length,
+          archivedCount: orderedProductIds.length,
+        },
       });
 
-      return count;
+      return {
+        deletedCount: deletableProductIds.length,
+        archivedCount: orderedProductIds.length,
+      };
     });
 
     purge("catalog");
@@ -867,8 +904,8 @@ export async function deleteAllProductsAction(): Promise<
 
     return {
       success: true,
-      message: `Successfully deleted all ${deletedCount} products from catalog.`,
-      data: { deletedCount },
+      message: `Deleted ${deletedCount} unreferenced products; archived ${archivedCount} products with order history.`,
+      data: { deletedCount, archivedCount },
     };
   } catch (error) {
     console.error("[Delete All Products Error]:", error);

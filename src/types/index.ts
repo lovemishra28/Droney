@@ -37,8 +37,11 @@ export type ProductStatus = "active" | "draft" | "archived";
 export type CosmeticGrade = "A" | "B" | "C";
 export type MediaType = "image" | "video";
 export type StorageProvider = "r2" | "bunny";
-export type PaymentMethod = "upi_qr" | "bank_transfer";
-export type PaymentStatus = "awaiting_verification" | "paid" | "rejected";
+export type PaymentStatus =
+  | "pending_payment"
+  | "awaiting_verification"
+  | "paid"
+  | "rejected";
 export type OrderStatus =
   "placed" | "processing" | "shipped" | "delivered" | "cancelled";
 

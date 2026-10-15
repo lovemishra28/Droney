@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, lt, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, lt, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { products, stockReservations } from "@/lib/db/schema";
 
@@ -25,7 +25,8 @@ const RESERVATION_WINDOW_MINUTES = 10; // 10-minute hold window for UPI payment 
  */
 export async function reserveInventoryForCheckout(
   userId: string,
-  items: ReservationLineItem[]
+  items: ReservationLineItem[],
+  orderId?: string
 ): Promise<ReservationResult> {
   if (!items || items.length === 0) {
     return { success: false, error: "Cart contains no line items to reserve." };
@@ -106,6 +107,7 @@ export async function reserveInventoryForCheckout(
         const [reservation] = await tx
           .insert(stockReservations)
           .values({
+            orderId: orderId || null,
             productId: item.productId,
             userId,
             quantity: item.quantity,
@@ -138,7 +140,8 @@ export async function reserveInventoryForCheckout(
 export async function commitStockReservation(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   userId: string,
-  items: ReservationLineItem[]
+  items: ReservationLineItem[],
+  orderId?: string
 ): Promise<void> {
   for (const item of items) {
     // Decrement physical stock count safely
@@ -148,17 +151,33 @@ export async function commitStockReservation(
         stockQuantity: sql`${products.stockQuantity} - ${item.quantity}`,
         updatedAt: new Date(),
       })
-      .where(eq(products.id, item.productId));
-
-    // Release temporary reservation record
-    await tx
-      .delete(stockReservations)
       .where(
         and(
-          eq(stockReservations.productId, item.productId),
-          eq(stockReservations.userId, userId)
+          eq(products.id, item.productId),
+          gte(products.stockQuantity, item.quantity)
         )
       );
+
+    // Release temporary reservation record
+    if (orderId) {
+      await tx
+        .delete(stockReservations)
+        .where(
+          and(
+            eq(stockReservations.productId, item.productId),
+            eq(stockReservations.orderId, orderId)
+          )
+        );
+    } else {
+      await tx
+        .delete(stockReservations)
+        .where(
+          and(
+            eq(stockReservations.productId, item.productId),
+            eq(stockReservations.userId, userId)
+          )
+        );
+    }
   }
 }
 
@@ -167,9 +186,14 @@ export async function commitStockReservation(
  */
 export async function releaseUserReservations(
   userId: string,
-  productIds?: string[]
+  productIds?: string[],
+  orderId?: string
 ): Promise<void> {
-  if (productIds && productIds.length > 0) {
+  if (orderId) {
+    await db
+      .delete(stockReservations)
+      .where(eq(stockReservations.orderId, orderId));
+  } else if (productIds && productIds.length > 0) {
     await db
       .delete(stockReservations)
       .where(

@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { auditLogs, orders } from "@/lib/db/schema";
+import { auditLogs, orders, products, stockReservations } from "@/lib/db/schema";
 import { requireAdminSession } from "@/server/queries/admin";
-import { sendOtpSms } from "@/lib/sms";
-import { sendOtpEmail } from "@/lib/email";
+import { sendOrderAlertSms } from "@/lib/sms";
+import { sendTransactionalEmail } from "@/lib/email";
 import type { ActionResponse } from "@/server/actions/auth";
 
 const purge = revalidateTag as (tag: string, profile?: any) => void;
@@ -41,6 +41,7 @@ const updateFulfillmentSchema = z.object({
 /**
  * Updates order dispatch status and links courier tracking identifiers.
  * Automatically notifies the customer via SMS & Email when transitioned to 'shipped'.
+ * Safely restocks inventory and releases reservations if transitioned to 'cancelled' (DRN-012).
  */
 export async function updateOrderFulfillmentAction(
   rawInput: z.infer<typeof updateFulfillmentSchema>
@@ -62,6 +63,7 @@ export async function updateOrderFulfillmentAction(
       where: eq(orders.id, orderId),
       with: {
         user: true,
+        items: true,
       },
     });
 
@@ -88,7 +90,30 @@ export async function updateOrderFulfillmentAction(
         })
         .where(eq(orders.id, orderId));
 
-      // 2. Append Audit Entry
+      // 2. If cancelled and previously paid, restock products (DRN-012)
+      if (
+        orderStatus === "cancelled" &&
+        targetOrder.orderStatus !== "cancelled"
+      ) {
+        if (targetOrder.paymentStatus === "paid") {
+          for (const item of targetOrder.items) {
+            await tx
+              .update(products)
+              .set({
+                stockQuantity: sql`${products.stockQuantity} + ${item.quantity}`,
+                updatedAt: new Date(),
+              })
+              .where(eq(products.id, item.productId));
+          }
+        }
+
+        // Release any reservations tied to this order
+        await tx
+          .delete(stockReservations)
+          .where(eq(stockReservations.orderId, targetOrder.id));
+      }
+
+      // 3. Append Audit Entry
       await tx.insert(auditLogs).values({
         adminId: session.sub,
         action: "ORDER_FULFILLMENT_UPDATED",
@@ -104,13 +129,14 @@ export async function updateOrderFulfillmentAction(
       });
     });
 
-    // 3. Purge Cache Targets
+    // 4. Purge Cache Targets
     revalidatePath("/admin/orders");
     revalidatePath("/admin");
     revalidatePath(`/order/${targetOrder.orderReference}`);
     purge("orders");
+    purge("catalog");
 
-    // 4. Automated Dispatch Notification
+    // 5. Automated Customer Notifications (DRN-050)
     if (orderStatus === "shipped" && targetOrder.user) {
       const customer = targetOrder.user;
       const ref = targetOrder.orderReference;
@@ -118,17 +144,40 @@ export async function updateOrderFulfillmentAction(
       const awb = trackingAwb || targetOrder.trackingAwb;
 
       if (customer.phone) {
-        void sendOtpSms(
+        void sendOrderAlertSms(
           customer.phone,
           `Your AeroStore Drone Order #${ref} has shipped via ${partner} (AWB: ${awb}). Track your shipment online.`
         );
       }
 
       if (customer.email) {
-        void sendOtpEmail(
-          customer.email,
-          `Your order #${ref} has been dispatched via ${partner} with tracking number ${awb}. View live progress on your order tracking page.`
+        void sendTransactionalEmail({
+          toEmail: customer.email,
+          subject: `Order #${ref} Shipped via ${partner}`,
+          heading: "Your Order is on the Way",
+          body: `Your order #${ref} has been dispatched via ${partner} with tracking number ${awb}. View live progress on your order tracking page.`,
+          orderReference: ref,
+        });
+      }
+    } else if (orderStatus === "cancelled" && targetOrder.user) {
+      const customer = targetOrder.user;
+      const ref = targetOrder.orderReference;
+
+      if (customer.phone) {
+        void sendOrderAlertSms(
+          customer.phone,
+          `Your Order #${ref} has been cancelled. If payment was verified, our support team will process your refund shortly.`
         );
+      }
+
+      if (customer.email) {
+        void sendTransactionalEmail({
+          toEmail: customer.email,
+          subject: `Order #${ref} Cancelled`,
+          heading: "Order Cancelled",
+          body: `Your Order #${ref} has been cancelled. If payment was verified, our support team will process your refund shortly.`,
+          orderReference: ref,
+        });
       }
     }
 

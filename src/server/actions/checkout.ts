@@ -1,9 +1,9 @@
 "use server";
 
 import crypto from "node:crypto";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { orderItems, orders, products } from "@/lib/db/schema";
+import { orderItems, orders, products, stockReservations, users } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { getCurrentSession } from "@/server/services/session";
 import { reserveInventoryForCheckout } from "@/server/services/inventory";
@@ -14,8 +14,8 @@ import {
   type SubmitPaymentProofInput,
   type ShippingAddressInput,
 } from "@/lib/validations/checkout";
-import { sendOtpSms } from "@/lib/sms";
-import { sendOtpEmail } from "@/lib/email";
+import { sendOrderAlertSms } from "@/lib/sms";
+import { sendTransactionalEmail } from "@/lib/email";
 import type { ActionResponse } from "@/server/actions/auth";
 import { redis } from "@/lib/redis";
 
@@ -53,11 +53,12 @@ export interface CheckoutInitResponse {
 }
 
 /**
- * Generates an alphanumeric order reference code (e.g., ORD-82914).
+ * Generates a high-entropy, collision-free order reference code (e.g., ORD-M4L8PQ-A1B2C3D4).
  */
 function generateOrderReference(): string {
-  const randomSuffix = crypto.randomInt(10000, 99999).toString();
-  return `ORD-${randomSuffix}`;
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
+  return `ORD-${timestamp}-${randomSuffix}`;
 }
 
 /**
@@ -182,16 +183,60 @@ export async function initiateCheckoutAction(
     insuranceDetails: insuranceDetails?.opted ? insuranceDetails : undefined,
   };
 
-  // Keep the checkout attempt outside PostgreSQL until the customer submits a
-  // UTR. The Redis entry expires with the inventory reservation.
+  // Create durable order in PostgreSQL immediately with status 'pending_payment' (DRN-004)
+  await db.transaction(async (tx) => {
+    const [insertedOrder] = await tx
+      .insert(orders)
+      .values({
+        orderReference,
+        userId: session.sub,
+        totalAmountPaise,
+        shippingAddress: finalShippingAddress,
+        paymentMethod: "upi_qr",
+        paymentStatus: "pending_payment",
+        orderStatus: "placed",
+      })
+      .returning();
+
+    for (const line of lineItemSnapshots) {
+      await tx.insert(orderItems).values({
+        orderId: insertedOrder.id,
+        productId: line.productId,
+        quantity: line.quantity,
+        unitPricePaise: line.unitPricePaise,
+        title: line.title,
+        isSecondHand: line.isSecondHand,
+      });
+    }
+
+    // Attach orderId to the stock reservations created for this user
+    await tx
+      .update(stockReservations)
+      .set({ orderId: insertedOrder.id })
+      .where(
+        and(
+          eq(stockReservations.userId, session.sub),
+          inArray(stockReservations.id, reservationResult.reservationIds)
+        )
+      );
+  });
+
+  const pendingPayload: PendingCheckout = {
+    userId: session.sub,
+    totalAmountPaise,
+    shippingAddress: finalShippingAddress,
+    items: lineItemSnapshots,
+  };
+
+  // Scope temporary Redis pending payload to checkout:${session.sub}:${orderReference}
+  await redis.set(
+    `checkout:${session.sub}:${orderReference}`,
+    pendingPayload,
+    { ex: PENDING_CHECKOUT_TTL_SECONDS }
+  );
   await redis.set(
     `checkout:${orderReference}`,
-    {
-      userId: session.sub,
-      totalAmountPaise,
-      shippingAddress: finalShippingAddress,
-      items: lineItemSnapshots,
-    } satisfies PendingCheckout,
+    pendingPayload,
     { ex: PENDING_CHECKOUT_TTL_SECONDS }
   );
 
@@ -252,24 +297,41 @@ export async function submitPaymentProofAction(
   const { orderReference, upiTransactionId, paymentScreenshotUrl } =
     parsed.data;
 
-  // 1. Find a submitted/rejected order, or materialize the pending checkout
-  // only now that a valid UTR has been provided.
-  const targetOrder = await db.query.orders.findFirst({
+  // 1. Prevent UTR Reuse (Explicit DB Check before unique index trigger)
+  const existingUtr = await db.query.orders.findFirst({
+    where: eq(orders.upiTransactionId, upiTransactionId),
+    columns: { id: true, orderReference: true },
+  });
+
+  if (existingUtr && existingUtr.orderReference !== orderReference) {
+    return {
+      success: false,
+      message:
+        "This 12-digit UTR has already been submitted for another order. Each transaction reference can only be submitted once.",
+    };
+  }
+
+  // 2. Look up the durable order
+  let targetOrder = await db.query.orders.findFirst({
     where: eq(orders.orderReference, orderReference),
     with: {
       user: true,
+      items: true,
     },
   });
 
   if (!targetOrder) {
-    const pendingCheckout = await redis.get<PendingCheckout>(
-      `checkout:${orderReference}`
-    );
+    const pendingCheckout =
+      (await redis.get<PendingCheckout>(
+        `checkout:${session.sub}:${orderReference}`
+      )) ||
+      (await redis.get<PendingCheckout>(`checkout:${orderReference}`));
+
     if (!pendingCheckout || pendingCheckout.userId !== session.sub) {
       return {
         success: false,
         message:
-          "This checkout has expired. Please start checkout again and submit the UTR before the 10-minute reservation ends.",
+          "This checkout has expired or could not be found. Please start checkout again and submit the UTR before the 10-minute reservation ends.",
       };
     }
 
@@ -299,90 +361,98 @@ export async function submitPaymentProofAction(
           isSecondHand: line.isSecondHand,
         });
       }
-      return newOrder;
+
+      await tx
+        .update(stockReservations)
+        .set({ orderId: newOrder.id })
+        .where(
+          and(
+            eq(stockReservations.userId, session.sub),
+            inArray(
+              stockReservations.productId,
+              pendingCheckout.items.map((i) => i.productId)
+            )
+          )
+        );
+
+      const dbUser = await tx.query.users.findFirst({
+        where: eq(users.id, session.sub),
+      });
+
+      return {
+        ...newOrder,
+        user: dbUser ?? null,
+      };
     });
 
-    await redis.del(`checkout:${orderReference}`);
-    return {
-      success: true,
-      message:
-        "Payment reference submitted successfully. Our team is verifying your transfer.",
-      data: { orderReference: createdOrder.orderReference },
-    };
-  }
-
-  if (targetOrder.userId !== session.sub) {
-    return {
-      success: false,
-      message: "Unauthorized access to this order.",
-    };
-  }
-
-  if (targetOrder.paymentStatus === "paid") {
-    return {
-      success: false,
-      message: "Payment for this order has already been verified.",
-    };
-  }
-
-  // 2. Prevent UTR Reuse (Explicit DB Check before unique index trigger)
-  const existingUtr = await db.query.orders.findFirst({
-    where: eq(orders.upiTransactionId, upiTransactionId),
-    columns: { id: true, orderReference: true },
-  });
-
-  if (existingUtr && existingUtr.orderReference !== orderReference) {
-    return {
-      success: false,
-      message:
-        "This 12-digit UTR has already been submitted for another order. Each transaction reference can only be submitted once.",
-    };
-  }
-
-  // 3. Update Order with UTR & Screenshot Proof
-  try {
-    await db
-      .update(orders)
-      .set({
-        upiTransactionId,
-        paymentScreenshotUrl: paymentScreenshotUrl || null,
-        paymentStatus: "awaiting_verification",
-        updatedAt: new Date(),
-      })
-      .where(eq(orders.id, targetOrder.id));
-  } catch (error: unknown) {
-    // Catch PostgreSQL unique constraint violation on upi_transaction_id
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "23505"
-    ) {
+    targetOrder = createdOrder as any;
+  } else {
+    if (targetOrder.userId !== session.sub) {
       return {
         success: false,
-        message:
-          "This UTR number has already been recorded for a completed order.",
+        message: "Unauthorized access to this order.",
       };
     }
-    throw error;
+
+    if (targetOrder.paymentStatus === "paid") {
+      return {
+        success: false,
+        message: "Payment for this order has already been verified.",
+      };
+    }
+
+    // Update Order with UTR & Screenshot Proof
+    try {
+      await db
+        .update(orders)
+        .set({
+          upiTransactionId,
+          paymentScreenshotUrl: paymentScreenshotUrl || null,
+          paymentStatus: "awaiting_verification",
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, targetOrder.id));
+    } catch (error: unknown) {
+      // Catch PostgreSQL unique constraint violation on upi_transaction_id
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "23505"
+      ) {
+        return {
+          success: false,
+          message:
+            "This UTR number has already been recorded for a completed order.",
+        };
+      }
+      throw error;
+    }
   }
 
-  // 4. Send Confirmation Notification (Fast2SMS / Resend)
-  const customerUser = targetOrder.user;
+  // Clean up Redis pending state
+  await redis.del(`checkout:${session.sub}:${orderReference}`);
+  await redis.del(`checkout:${orderReference}`);
+
+  // Send Confirmation Notification using decoupled transactional templates (DRN-050)
+  const customerUser = targetOrder?.user;
   const shortUtr = upiTransactionId.slice(-4);
 
   if (customerUser?.phone) {
-    void sendOtpSms(
+    void sendOrderAlertSms(
       customerUser.phone,
       `We received your order #${orderReference}. We are verifying your UPI payment (UTR ending in ...${shortUtr}). You will receive a dispatch update once approved.`
     );
   }
 
   if (customerUser?.email) {
-    void sendOtpEmail(
-      customerUser.email,
-      `Order #${orderReference} received. We are verifying your payment proof (UTR: ${upiTransactionId}).`
-    );
+    void sendTransactionalEmail({
+      toEmail: customerUser.email,
+      subject: `Order #${orderReference} - Payment Proof Received`,
+      heading: "Payment Proof Received",
+      body: `We received your payment proof (UTR: ${upiTransactionId}) for Order #${orderReference}. Our verification team is confirming your transfer.`,
+      orderReference,
+    });
   }
 
   return {
