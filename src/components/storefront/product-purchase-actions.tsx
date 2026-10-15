@@ -35,7 +35,6 @@ export function ProductPurchaseActions({
   product,
 }: ProductPurchaseActionsProps) {
   const [quantity, setQuantity] = useState(1);
-  const [addInsurance, setAddInsurance] = useState(false);
   const [addedToast, setAddedToast] = useState(false);
   const [restrictionError, setRestrictionError] = useState<string | null>(null);
   const router = useRouter();
@@ -43,9 +42,17 @@ export function ProductPurchaseActions({
   const { addItem, setIsOpen } = useCartStore();
   const isAvailable = product.stockQuantity > 0;
 
-  // Pricing calculations (No EMI)
-  const mrpPaise = product.mrpPricePaise || Math.round(product.basePricePaise * 1.25);
-  const discountPercent = Math.max(0, Math.round(((mrpPaise - product.basePricePaise) / mrpPaise) * 100));
+  // Only display MRP & discount if genuine mrpPricePaise is recorded in the DB (DRN-028)
+  const mrpPaise =
+    product.mrpPricePaise && product.mrpPricePaise > product.basePricePaise
+      ? product.mrpPricePaise
+      : null;
+  const discountPercent = mrpPaise
+    ? Math.max(
+        0,
+        Math.round(((mrpPaise - product.basePricePaise) / mrpPaise) * 100)
+      )
+    : 0;
 
   async function handleAddToCart() {
     if (!isAvailable) return;
@@ -65,14 +72,14 @@ export function ProductPurchaseActions({
 
     addItem({
       productId: product.id,
-      name: `${product.name}${addInsurance ? " + Fly Care Premium" : ""}`,
+      name: product.name,
       slug: product.slug,
       basePricePaise: product.basePricePaise,
       thumbnailUrl: product.thumbnailUrl,
       isSecondHand: product.isSecondHand,
       quantity,
       stockAvailable: product.stockQuantity,
-      hasInsurance: addInsurance,
+      hasInsurance: false,
     });
 
     setAddedToast(true);
@@ -100,14 +107,14 @@ export function ProductPurchaseActions({
 
     addItem({
       productId: product.id,
-      name: `${product.name}${addInsurance ? " + Fly Care Premium" : ""}`,
+      name: product.name,
       slug: product.slug,
       basePricePaise: product.basePricePaise,
       thumbnailUrl: product.thumbnailUrl,
       isSecondHand: product.isSecondHand,
       quantity,
       stockAvailable: product.stockQuantity,
-      hasInsurance: addInsurance,
+      hasInsurance: false,
     });
 
     router.push("/checkout");
@@ -131,13 +138,13 @@ export function ProductPurchaseActions({
         </div>
       )}
 
-      {/* Strike-Through Price & Discount Badge (No EMI) */}
+      {/* Price & Real Discount Badge (No fabricated MRP) (DRN-028) */}
       <div className="rounded-xl border border-zinc-200/90 bg-zinc-50/80 p-4 space-y-2">
         <div className="flex flex-wrap items-baseline gap-3">
           <span className="text-3xl sm:text-4xl font-black tracking-tight text-black font-mono">
             {formatINR(product.basePricePaise)}
           </span>
-          {mrpPaise > product.basePricePaise && (
+          {mrpPaise && (
             <span className="text-sm font-semibold text-zinc-400 line-through font-mono">
               MRP: {formatINR(mrpPaise)}
             </span>
@@ -147,43 +154,6 @@ export function ProductPurchaseActions({
               Save {discountPercent}%
             </span>
           )}
-        </div>
-      </div>
-
-      {/* Protection & AMC Add-ons (Fly Care Premium Single Checkbox) */}
-      <div className="space-y-2">
-        <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-500">
-          Protection & AMC Add-ons:
-        </span>
-        <div
-          onClick={() => setAddInsurance(!addInsurance)}
-          className={`flex items-center justify-between rounded-xl border p-3.5 cursor-pointer transition select-none ${
-            addInsurance
-              ? "border-black bg-white shadow-xs ring-1 ring-black/5"
-              : "border-zinc-200 bg-zinc-50/60 hover:bg-zinc-50"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className={`flex h-5 w-5 items-center justify-center rounded border transition ${
-                addInsurance ? "border-black bg-black text-white" : "border-zinc-300 bg-white"
-              }`}
-            >
-              {addInsurance && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-            </div>
-            <div>
-              <span className="text-xs font-bold text-black flex items-center gap-1.5">
-                <Shield className="h-4 w-4 text-emerald-600" />
-                Fly Care Premium
-              </span>
-              <span className="text-[11px] text-zinc-500 block mt-0.5">
-                Official accidental damage coverage, rapid replacement & water impact warranty
-              </span>
-            </div>
-          </div>
-          <span className="text-xs font-mono font-bold text-black shrink-0 ml-3 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded">
-            +₹XXXX
-          </span>
         </div>
       </div>
 

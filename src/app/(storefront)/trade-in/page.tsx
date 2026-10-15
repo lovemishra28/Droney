@@ -22,12 +22,16 @@ const DRONE_MODELS = [
   { id: "fpv-5-custom", name: "Custom 5-Inch 6S FPV Drone", baseValuationInr: 28000 },
 ];
 
+import { submitTradeInAction } from "@/server/actions/inquiries";
+
 export default function TradeInValuationPage() {
   const [selectedDrone, setSelectedDrone] = useState(DRONE_MODELS[0]);
   const [condition, setCondition] = useState("mint");
   const [batteryCount, setBatteryCount] = useState(3);
   const [hasRcWithScreen, setHasRcWithScreen] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -41,9 +45,29 @@ export default function TradeInValuationPage() {
   const screenBonus = hasRcWithScreen ? 6000 : 0;
   const totalValuation = Math.round((selectedDrone.baseValuationInr * conditionMultiplier + batteryBonus + screenBonus) / 100) * 100;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    setIsPending(true);
+    setErrorMsg(null);
+
+    const res = await submitTradeInAction({
+      name: formData.name,
+      phone: formData.phone,
+      city: formData.city,
+      pincode: formData.pincode || "560001",
+      droneModel: selectedDrone.name,
+      condition,
+      batteryCount,
+      hasRcWithScreen,
+      estimatedValuationInr: totalValuation,
+    });
+
+    setIsPending(false);
+    if (res.success) {
+      setSubmitted(true);
+    } else {
+      setErrorMsg(res.message || "Failed to submit request");
+    }
   }
 
   return (
@@ -201,11 +225,18 @@ export default function TradeInValuationPage() {
                     </div>
                   </div>
 
+                  {errorMsg && (
+                    <div className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs font-semibold text-rose-800">
+                      {errorMsg}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    className="w-full rounded-full bg-[#c8f33b] py-3.5 font-bold text-black transition hover:bg-[#b8e530] shadow-xs active:scale-95"
+                    disabled={isPending}
+                    className="w-full rounded-full bg-[#c8f33b] py-3.5 font-bold text-black transition hover:bg-[#b8e530] shadow-xs active:scale-95 disabled:opacity-50"
                   >
-                    Schedule Doorstep Inspection & Pickup
+                    {isPending ? "Submitting Valuation..." : "Schedule Doorstep Inspection & Pickup"}
                   </button>
                 </form>
               </div>

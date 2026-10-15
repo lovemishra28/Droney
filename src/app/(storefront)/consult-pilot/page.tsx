@@ -15,6 +15,8 @@ import {
   ChevronRight
 } from "lucide-react";
 
+import { submitConsultationAction } from "@/server/actions/inquiries";
+
 export default function ConsultPilotPage() {
   const [topic, setTopic] = useState("fpv-tuning");
   const [pilotLevel, setPilotLevel] = useState("intermediate");
@@ -25,10 +27,29 @@ export default function ConsultPilotPage() {
     notes: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    setIsPending(true);
+    setErrorMsg(null);
+
+    const res = await submitConsultationAction({
+      fullName: formData.fullName,
+      phone: formData.phone,
+      topic,
+      pilotLevel,
+      droneModel: formData.droneModel,
+      notes: formData.notes,
+    });
+
+    setIsPending(false);
+    if (res.success) {
+      setSubmitted(true);
+    } else {
+      setErrorMsg(res.message || "Failed to submit request");
+    }
   }
 
   return (
@@ -187,12 +208,20 @@ export default function ConsultPilotPage() {
 
               {/* Submit CTA */}
               <div className="pt-2">
+                {errorMsg && (
+                  <div className="mb-3 rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs font-semibold text-rose-800">
+                    {errorMsg}
+                  </div>
+                )}
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#c8f33b] py-3.5 px-6 font-bold text-black transition-all hover:bg-[#b8e530] active:scale-95 shadow-xs"
+                  disabled={isPending}
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#c8f33b] py-3.5 px-6 font-bold text-black transition-all hover:bg-[#b8e530] active:scale-95 shadow-xs disabled:opacity-50"
                 >
                   <PhoneCall className="h-4 w-4" />
-                  <span>Confirm Pilot Consultation Request</span>
+                  <span>
+                    {isPending ? "Transmitting Request..." : "Confirm Pilot Consultation Request"}
+                  </span>
                 </button>
                 <p className="mt-2.5 text-center text-[11px] text-zinc-500">
                   Complimentary 20-minute diagnostic session for all verified Altitude platform members.

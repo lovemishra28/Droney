@@ -16,8 +16,7 @@ import {
   Sliders,
   Plane
 } from "lucide-react";
-import { useCartStore } from "@/stores/cart-store";
-import { checkAddToCartAllowed } from "@/lib/auth-client";
+import { submitCustomBuildAction } from "@/server/actions/inquiries";
 
 interface ComponentOption {
   id: string;
@@ -58,9 +57,9 @@ export default function KitBuilderPage() {
   const [selectedMotors, setSelectedMotors] = useState<ComponentOption>(MOTORS[0]);
   const [selectedStack, setSelectedStack] = useState<ComponentOption>(STACKS[0]);
   const [selectedVtx, setSelectedVtx] = useState<ComponentOption>(VTX_SYSTEMS[0]);
+  const [submitting, setSubmitting] = useState(false);
   const [buildSuccessToast, setBuildSuccessToast] = useState(false);
-
-  const { addItem, setIsOpen } = useCartStore();
+  const [inquiryId, setInquiryId] = useState<string | null>(null);
 
   const totalWeightGrams =
     selectedFrame.weightGrams +
@@ -78,34 +77,21 @@ export default function KitBuilderPage() {
   const totalPriceInr = (totalPricePaise / 100).toLocaleString("en-IN");
 
   async function handleAddCustomBuildToCart() {
-    const guard = await checkAddToCartAllowed();
-    if (!guard.allowed) {
-      if (guard.reason === "unauthenticated") {
-        router.push(guard.loginUrl);
-        return;
-      }
-      if (guard.reason === "admin") {
-        alert(guard.message);
-        return;
-      }
-    }
-
-    addItem({
-      productId: "00000000-0000-0000-0000-000000000001",
-      name: `Altitude Custom Drone (${selectedFrame.name.split(" ")[0]} 6S)`,
-      slug: "aerox-5-freestyle-bnf-grade-a",
-      basePricePaise: totalPricePaise,
-      thumbnailUrl: "/images/altitude-hero-bg.jpg",
-      isSecondHand: false,
-      quantity: 1,
-      stockAvailable: 10,
+    setSubmitting(true);
+    const res = await submitCustomBuildAction({
+      frameName: selectedFrame.name,
+      motorsName: selectedMotors.name,
+      stackName: selectedStack.name,
+      vtxName: selectedVtx.name,
+      totalPricePaise,
+      totalWeightGrams,
     });
+    setSubmitting(false);
 
-    setBuildSuccessToast(true);
-    setTimeout(() => {
-      setBuildSuccessToast(false);
-      setIsOpen(true);
-    }, 800);
+    if (res.success && res.data) {
+      setInquiryId(res.data.inquiryId);
+      setBuildSuccessToast(true);
+    }
   }
 
   return (
@@ -324,14 +310,41 @@ export default function KitBuilderPage() {
                   <span className="text-3xl font-black text-black">₹{totalPriceInr}</span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleAddCustomBuildToCart}
-                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#c8f33b] py-3.5 px-6 font-bold text-black transition-all hover:bg-[#b8e530] shadow-xs active:scale-95"
-                >
-                  <ShoppingBag className="h-4 w-4" />
-                  <span>{buildSuccessToast ? "Added to Flight Bag!" : "Add Custom Build to Bag"}</span>
-                </button>
+                {buildSuccessToast ? (
+                  <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-center space-y-2">
+                    <Check className="h-6 w-6 text-emerald-600 mx-auto" />
+                    <p className="text-xs font-bold text-emerald-900">
+                      Custom Build Configuration Registered!
+                    </p>
+                    <p className="text-[11px] text-emerald-800">
+                      Reference:{" "}
+                      <span className="font-mono font-bold">
+                        {inquiryId?.slice(0, 8).toUpperCase()}
+                      </span>
+                      . Our engineers will verify parts compatibility and contact you.
+                    </p>
+                    <Link
+                      href="/catalog"
+                      className="inline-block mt-2 rounded-full bg-black text-white px-4 py-1.5 text-[11px] font-bold hover:bg-zinc-800 transition"
+                    >
+                      Browse Certified Fleet
+                    </Link>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={handleAddCustomBuildToCart}
+                    className="w-full flex items-center justify-center gap-2 rounded-full bg-[#c8f33b] py-3.5 px-6 font-bold text-black transition-all hover:bg-[#b8e530] shadow-xs active:scale-95 disabled:opacity-50"
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    <span>
+                      {submitting
+                        ? "Registering Build..."
+                        : "Request Custom Bench Assembly & Quote"}
+                    </span>
+                  </button>
+                )}
 
                 <p className="mt-3 text-center text-[11px] text-zinc-500 leading-relaxed">
                   Includes pre-flashed Betaflight firmware & bench telemetry verification report.

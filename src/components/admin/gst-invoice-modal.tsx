@@ -8,6 +8,7 @@ export interface InvoiceData {
   orderReference: string;
   createdAt: string;
   paymentMethod: string;
+  paymentStatus?: string | null;
   upiTransactionId?: string | null;
   customerName: string;
   customerPhone?: string | null;
@@ -43,15 +44,34 @@ export function GstInvoiceModal({ invoice, onClose }: GstInvoiceModalProps) {
 
   // Base taxable amount calculated from inclusive 18% GST (Standard drone electronics rate)
   const totalAmountInr = invoice.totalAmountPaise / 100;
-  const taxableAmountInr = totalAmountInr / 1.18;
-  const totalGstInr = totalAmountInr - taxableAmountInr;
+  const taxableAmountInr = Math.round((totalAmountInr / 1.18) * 100) / 100;
+  const totalGstInr = Math.round((totalAmountInr - taxableAmountInr) * 100) / 100;
 
   // Inter-state check (Assuming business origin in Madhya Pradesh)
   const isInterState =
     (invoice.shippingAddress.state || "").trim().toLowerCase() !== "madhya pradesh";
   const igstInr = isInterState ? totalGstInr : 0;
-  const cgstInr = isInterState ? 0 : totalGstInr / 2;
-  const sgstInr = isInterState ? 0 : totalGstInr / 2;
+  const cgstInr = isInterState ? 0 : Math.round((totalGstInr / 2) * 100) / 100;
+  const sgstInr = isInterState ? 0 : Math.round((totalGstInr / 2) * 100) / 100;
+
+  const isPaid = invoice.paymentStatus === "paid";
+  const paymentStatusLabel = isPaid
+    ? "Cleared / Paid"
+    : invoice.paymentStatus === "awaiting_verification"
+    ? "Awaiting Verification"
+    : invoice.paymentStatus === "pending_payment"
+    ? "Pending Payment"
+    : invoice.paymentStatus === "rejected"
+    ? "Payment Rejected"
+    : invoice.paymentStatus === "cancelled"
+    ? "Cancelled"
+    : "Pending Verification";
+
+  const paymentStatusColor = isPaid
+    ? "text-emerald-600 dark:text-emerald-400 print:text-emerald-700"
+    : invoice.paymentStatus === "rejected" || invoice.paymentStatus === "cancelled"
+    ? "text-rose-600 dark:text-rose-400 print:text-rose-700"
+    : "text-amber-600 dark:text-amber-400 print:text-amber-700";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md print:p-0 print:bg-white">
@@ -92,7 +112,7 @@ export function GstInvoiceModal({ invoice, onClose }: GstInvoiceModalProps) {
                 Precision Drones, Parts & Certified Pre-Owned Systems
               </p>
               <p className="text-[11px] text-zinc-500 print:text-zinc-500 mt-1">
-                GSTIN: 23AAAAA0000A1Z5 | PAN: AAAAA0000A
+                HSN 8806 • Commercial UAV Systems & Components
               </p>
             </div>
 
@@ -140,8 +160,8 @@ export function GstInvoiceModal({ invoice, onClose }: GstInvoiceModalProps) {
               <p className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400 print:text-zinc-600">
                 UTR: {invoice.upiTransactionId || "Verified by Merchant"}
               </p>
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 print:text-emerald-700 font-semibold mt-1">
-                Payment Status: Cleared / Paid
+              <p className={`text-[11px] ${paymentStatusColor} font-semibold mt-1`}>
+                Payment Status: {paymentStatusLabel}
               </p>
             </div>
           </div>

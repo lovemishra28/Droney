@@ -597,6 +597,24 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   }),
 }));
 
+export const inquiries = pgTable(
+  "inquiries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    type: varchar("type", { length: 32 }).notNull(), // 'consultation', 'trade_in', 'newsletter', 'custom_build'
+    fullName: varchar("full_name", { length: 128 }),
+    email: varchar("email", { length: 255 }),
+    phone: varchar("phone", { length: 32 }),
+    payload: jsonb("payload").$type<Record<string, unknown>>().default({}),
+    status: varchar("status", { length: 32 }).notNull().default("new"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_inquiries_type").on(table.type),
+    index("idx_inquiries_email").on(table.email),
+  ]
+);
+
 // ============================================================================
 // 9. INFERRED TYPESCRIPT TYPES
 // ============================================================================
@@ -638,3 +656,6 @@ export type NewStockReservation = InferInsertModel<typeof stockReservations>;
 
 export type AuditLog = InferSelectModel<typeof auditLogs>;
 export type NewAuditLog = InferInsertModel<typeof auditLogs>;
+
+export type Inquiry = InferSelectModel<typeof inquiries>;
+export type NewInquiry = InferInsertModel<typeof inquiries>;
