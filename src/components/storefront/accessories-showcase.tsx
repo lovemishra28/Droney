@@ -3,75 +3,44 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Plus, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Plus, Check, Sparkles } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
+import { resolveImageUrl } from "@/lib/media";
+import { formatINR } from "@/lib/utils";
+import { checkAddToCartAllowed } from "@/lib/auth-client";
 
-export interface AccessoryItem {
-  id: string;
-  name: string;
-  slug: string;
-  categoryTag: string;
-  description: string;
-  pricePaise: number;
-  image: string;
+export interface AccessoriesShowcaseProps {
+  items?: any[];
 }
 
-const ACCESSORY_ITEMS: AccessoryItem[] = [
-  {
-    id: "acc-battery-01",
-    name: "Intelligent Flight Battery",
-    slug: "intelligent-flight-battery-acc-bat",
-    categoryTag: "POWER & ENERGY",
-    description: "High-capacity LiPo cell with integrated BMS protection circuit.",
-    pricePaise: 900000,
-    image: "/images/accessory-battery.jpg",
-  },
-  {
-    id: "acc-nd-filters-02",
-    name: "ND Filter 4-Pack (8/16/32/64)",
-    slug: "nd-filter-4-pack-acc-nd",
-    categoryTag: "OPTICS & FILTERS",
-    description: "Optical glass coating preserving genuine colors in peak sunlight.",
-    pricePaise: 425000,
-    image: "/images/accessory-nd-filters.jpg",
-  },
-  {
-    id: "acc-hard-case-03",
-    name: "Explorer Hard Carry Case",
-    slug: "explorer-hard-carry-case-acc-case",
-    categoryTag: "PROTECTION & TRAVEL",
-    description: "IP67 waterproof ballistic shell with laser-cut custom EVA foam.",
-    pricePaise: 749000,
-    image: "/images/accessory-hard-case.jpg",
-  },
-  {
-    id: "acc-rc2-remote-04",
-    name: "DJI RC 2 Remote Controller",
-    slug: "dji-rc-2-remote-controller-acc-rc2",
-    categoryTag: "CONTROL & TELEMETRY",
-    description: "5.5-inch FHD screen, lightweight screen with O4 video link.",
-    pricePaise: 2750000,
-    image: "/images/accessory-rc2-remote.jpg",
-  },
-];
-
-function formatINR(paise: number): string {
-  return "₹" + Math.round(paise / 100).toLocaleString("en-IN");
-}
-
-export function AccessoriesShowcase() {
+export function AccessoriesShowcase({ items = [] }: AccessoriesShowcaseProps) {
+  const router = useRouter();
   const { addItem, setIsOpen } = useCartStore();
   const [addedItem, setAddedItem] = useState<string | null>(null);
 
-  const handleAdd = (item: AccessoryItem) => {
+  const handleAdd = async (item: any) => {
+    const guard = await checkAddToCartAllowed();
+    if (!guard.allowed) {
+      if (guard.reason === "unauthenticated") {
+        router.push(guard.loginUrl);
+        return;
+      }
+      if (guard.reason === "admin") {
+        alert(guard.message);
+        return;
+      }
+    }
+
+    const img = resolveImageUrl(item.media?.[0]?.url, item.name);
     addItem({
       productId: item.id,
       name: item.name,
       slug: item.slug,
-      basePricePaise: item.pricePaise,
-      thumbnailUrl: item.image,
-      isSecondHand: false,
-      stockAvailable: 12,
+      basePricePaise: item.basePricePaise,
+      thumbnailUrl: img,
+      isSecondHand: Boolean(item.isSecondHand),
+      stockAvailable: item.stockQuantity ?? 1,
     });
     setAddedItem(item.id);
     setIsOpen(true);
@@ -100,69 +69,85 @@ export function AccessoriesShowcase() {
           </Link>
         </div>
 
-        {/* 4 Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {ACCESSORY_ITEMS.map((item) => {
-            const isAdded = addedItem === item.id;
+        {items.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/60 p-8 text-center">
+            <p className="text-sm font-bold text-zinc-700">No accessories currently in stock</p>
+            <p className="mt-1 text-xs text-zinc-500">
+              When accessory products are added to the database, they will appear here automatically.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {items.slice(0, 4).map((item) => {
+              const isAdded = addedItem === item.id;
+              const image = resolveImageUrl(item.media?.[0]?.url, item.name);
+              const categoryTag = item.category?.name?.toUpperCase() || "ACCESSORY";
 
-            return (
-              <div
-                key={item.id}
-                className="group flex flex-col justify-between rounded-2xl border border-zinc-200/80 bg-white p-4 transition-all duration-300 hover:border-zinc-300 hover:shadow-lg"
-              >
-                <div>
-                  {/* Image */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-zinc-100">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+              return (
+                <div
+                  key={item.id}
+                  className="group flex flex-col justify-between rounded-2xl border border-zinc-200/80 bg-white p-4 transition-all duration-300 hover:border-zinc-300 hover:shadow-lg"
+                >
+                  <div>
+                    {/* Image */}
+                    <Link
+                      href={`/product/${item.slug}`}
+                      className="block relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-zinc-100"
+                    >
+                      <Image
+                        src={image}
+                        alt={item.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </Link>
+
+                    {/* Metadata */}
+                    <div className="mt-4">
+                      <span className="font-mono text-[10px] font-bold tracking-wider text-zinc-500 uppercase">
+                        {categoryTag}
+                      </span>
+                      <Link
+                        href={`/product/${item.slug}`}
+                        className="mt-1 block text-sm font-bold text-black leading-snug hover:underline"
+                      >
+                        {item.name}
+                      </Link>
+                      <p className="mt-1 text-[11px] leading-relaxed text-zinc-500 line-clamp-2">
+                        {item.description || "High-performance authentic accessory built for flight reliability."}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Metadata */}
-                  <div className="mt-4">
-                    <span className="font-mono text-[10px] font-bold tracking-wider text-zinc-500 uppercase">
-                      {item.categoryTag}
+                  {/* Bottom Price & Add Action */}
+                  <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-3">
+                    <span className="font-mono text-sm font-black text-black">
+                      {formatINR(item.basePricePaise)}
                     </span>
-                    <h3 className="mt-1 text-sm font-bold text-black leading-snug">
-                      {item.name}
-                    </h3>
-                    <p className="mt-1 text-[11px] leading-relaxed text-zinc-500 line-clamp-2">
-                      {item.description}
-                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAdd(item)}
+                      aria-label={`Add ${item.name} to bag`}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-95 cursor-pointer ${
+                        isAdded
+                          ? "bg-black text-[#c8f33b]"
+                          : "bg-[#c8f33b] hover:bg-[#b8e530] text-black shadow-xs"
+                      }`}
+                    >
+                      {isAdded ? (
+                        <Check className="h-4 w-4 stroke-[3]" />
+                      ) : (
+                        <Plus className="h-4 w-4 stroke-[2.5]" />
+                      )}
+                    </button>
                   </div>
                 </div>
-
-                {/* Bottom Price & Add Action */}
-                <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-3">
-                  <span className="font-mono text-sm font-black text-black">
-                    {formatINR(item.pricePaise)}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => handleAdd(item)}
-                    aria-label={`Add ${item.name} to bag`}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-95 ${
-                      isAdded
-                        ? "bg-black text-[#c8f33b]"
-                        : "bg-[#c8f33b] hover:bg-[#b8e530] text-black shadow-xs"
-                    }`}
-                  >
-                    {isAdded ? (
-                      <Check className="h-4 w-4 stroke-[3]" />
-                    ) : (
-                      <Plus className="h-4 w-4 stroke-[2.5]" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );

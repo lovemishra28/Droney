@@ -11,21 +11,11 @@ export function Footer() {
           
           {/* Column 1: Brand & Address (4 Cols) */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black border border-white/20 shadow-xs">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 4L21 20H3L12 4Z" fill="#c8f33b" />
-                </svg>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-base font-black tracking-wider text-white uppercase font-sans">
+              <div className="inline-flex items-center select-none group">
+                <span className="font-tech text-2xl font-bold tracking-[0.05em] text-white leading-none uppercase">
                   ALTITUDE
                 </span>
-                <span className="text-[8px] font-semibold tracking-[0.2em] text-zinc-500 uppercase">
-                  AVIATION TECH
-                </span>
               </div>
-            </div>
 
             <p className="text-xs leading-relaxed text-zinc-400 max-w-sm">
               The premier hub in India for aerial cinematography, certified pre-owned drones, FPV race conversions, and certified flight consultations.
@@ -68,12 +58,27 @@ export function Footer() {
           {/* Column 2: DRONES (2.5 Cols) */}
           <div className="lg:col-span-3">
             <h4 className="text-xs font-mono font-bold tracking-wider text-white uppercase">
-              DRONES
+              DRONE FLEET
             </h4>
             <ul className="mt-4 space-y-2.5 text-xs text-zinc-400">
               <li>
-                <Link href="/catalog" className="hover:text-white transition">
-                  Camera Drones
+                <Link href="/catalog?category=mini-series" className="hover:text-white transition">
+                  Mini Series (&lt;249g)
+                </Link>
+              </li>
+              <li>
+                <Link href="/catalog?category=air-series" className="hover:text-white transition">
+                  Air Series (Dual-Camera)
+                </Link>
+              </li>
+              <li>
+                <Link href="/catalog?category=mavic-series" className="hover:text-white transition">
+                  Mavic Flagship Cinema
+                </Link>
+              </li>
+              <li>
+                <Link href="/catalog?category=avata-series" className="hover:text-white transition">
+                  Avata &amp; Motion FPV
                 </Link>
               </li>
               <li>
@@ -84,54 +89,38 @@ export function Footer() {
                   </span>
                 </Link>
               </li>
-              <li>
-                <Link href="/catalog?category=fpv-drones" className="hover:text-white transition">
-                  Cinematic FPV
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog?category=camera-drones" className="hover:text-white transition">
-                  Sub-249g Micro Platforms
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog" className="hover:text-white transition">
-                  Enterprise Mapping
-                </Link>
-              </li>
             </ul>
           </div>
 
-          {/* Column 3: HARDWARE & LAB (2.5 Cols) */}
+          {/* Column 3: ACCESSORIES & SPARES (2.5 Cols) */}
           <div className="lg:col-span-3">
             <h4 className="text-xs font-mono font-bold tracking-wider text-white uppercase">
-              HARDWARE &amp; LAB
+              ACCESSORIES &amp; SPARES
             </h4>
             <ul className="mt-4 space-y-2.5 text-xs text-zinc-400">
               <li>
                 <Link href="/catalog?category=accessories" className="hover:text-white transition">
-                  Intelligent Batteries
+                  Intelligent Flight Batteries
+                </Link>
+              </li>
+              <li>
+                <Link href="/product/dji-rc-2-remote-controller" className="hover:text-white transition">
+                  DJI RC 2 Smart Controller
                 </Link>
               </li>
               <li>
                 <Link href="/catalog?category=accessories" className="hover:text-white transition">
-                  ND Cinema Glass
+                  Optical Cinema ND Glass
                 </Link>
               </li>
               <li>
-                <Link href="/catalog?category=motors" className="hover:text-white transition">
-                  Motors &amp; ESC Stacks
+                <Link href="/catalog?category=accessories" className="hover:text-white transition">
+                  Low-Noise Propellers
                 </Link>
               </li>
               <li>
-                <Link href="/kit-builder" className="hover:text-white transition flex items-center gap-1.5">
-                  <Sliders className="h-3.5 w-3.5 text-[#c8f33b]" />
-                  <span>Carbon Frames</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/kit-builder" className="hover:text-white transition">
-                  Custom Build Sandbox
+                <Link href="/catalog?category=accessories" className="hover:text-white transition">
+                  Explorer Waterproof Cases
                 </Link>
               </li>
             </ul>

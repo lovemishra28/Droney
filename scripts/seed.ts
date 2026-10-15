@@ -331,10 +331,9 @@ async function runSeed() {
         console.log(`  ➕ Category created: ${category.name}`);
       }
 
-      // Convert INR Rupee price to integer Paise
       const basePricePaise = Math.round(base_price_inr * 100);
       const isSecondHandBool = Boolean(is_second_hand);
-      const slug = (record as any).slug || `${generateSlug(name)}-${sku.toLowerCase()}`;
+      const slug = (record as any).slug || generateSlug(name);
 
       // 2. Upsert Product Record
       const [product] = await tx

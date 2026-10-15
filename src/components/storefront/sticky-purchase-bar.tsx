@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Plus, ShoppingBag } from "lucide-react";
 import { formatINR } from "@/lib/utils";
 import { isValidProductId, useCartStore } from "@/stores/cart-store";
+import { checkAddToCartAllowed } from "@/lib/auth-client";
 
 interface StickyPurchaseBarProps {
   product: {
@@ -18,6 +20,7 @@ interface StickyPurchaseBarProps {
 }
 
 export function StickyPurchaseBar({ product }: StickyPurchaseBarProps) {
+  const router = useRouter();
   const { addItem, items, setIsOpen } = useCartStore();
   const [addedRecently, setAddedRecently] = useState(false);
 
@@ -25,8 +28,20 @@ export function StickyPurchaseBar({ product }: StickyPurchaseBarProps) {
   const isAvailable =
     product.stockQuantity > 0 && isValidProductId(product.id);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!isAvailable) return;
+
+    const guard = await checkAddToCartAllowed();
+    if (!guard.allowed) {
+      if (guard.reason === "unauthenticated") {
+        router.push(guard.loginUrl);
+        return;
+      }
+      if (guard.reason === "admin") {
+        alert(guard.message);
+        return;
+      }
+    }
 
     addItem({
       productId: product.id,
@@ -42,11 +57,12 @@ export function StickyPurchaseBar({ product }: StickyPurchaseBarProps) {
     setTimeout(() => setAddedRecently(false), 1200);
   };
 
-  const handleInstantBuy = () => {
+  const handleInstantBuy = async () => {
     if (!isInCart) {
-      handleAddToCart();
+      await handleAddToCart();
+    } else {
+      setIsOpen(true);
     }
-    setIsOpen(true);
   };
 
   return (

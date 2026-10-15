@@ -1,7 +1,7 @@
 import { and, count, desc, eq, isNotNull, lte, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { auditLogs, orders, products } from "@/lib/db/schema";
+import { auditLogs, orders, products, users } from "@/lib/db/schema";
 import { getCurrentSession } from "@/server/services/session";
 
 /**
@@ -11,6 +11,17 @@ export async function requireAdminSession() {
   const session = await getCurrentSession();
 
   if (!session || session.role !== "admin") {
+    redirect("/login?callbackUrl=/admin");
+  }
+
+  // Do not trust a long-lived role claim after the backing user has been
+  // deleted or the app has been pointed at a different database.
+  const adminUser = await db.query.users.findFirst({
+    where: and(eq(users.id, session.sub), eq(users.role, "admin")),
+    columns: { id: true },
+  });
+
+  if (!adminUser) {
     redirect("/login?callbackUrl=/admin");
   }
 

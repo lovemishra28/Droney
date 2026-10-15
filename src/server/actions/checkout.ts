@@ -24,7 +24,16 @@ const PENDING_CHECKOUT_TTL_SECONDS = 10 * 60;
 interface PendingCheckout {
   userId: string;
   totalAmountPaise: number;
-  shippingAddress: ShippingAddressInput;
+  shippingAddress: ShippingAddressInput & {
+    insuranceDetails?: {
+      opted: boolean;
+      fullName?: string;
+      phone?: string;
+      email?: string;
+      dronePurpose?: string;
+      nomineeName?: string;
+    };
+  };
   items: Array<{
     productId: string;
     title: string;
@@ -97,6 +106,13 @@ export async function initiateCheckoutAction(
     };
   }
 
+  if (session.role === "admin") {
+    return {
+      success: false,
+      message: "Administrator accounts cannot purchase or place orders from their own shop.",
+    };
+  }
+
   const parsed = initiateCheckoutSchema.safeParse(rawInput);
   if (!parsed.success) {
     return {
@@ -105,7 +121,7 @@ export async function initiateCheckoutAction(
     };
   }
 
-  const { items: requestedItems, shippingAddress } = parsed.data;
+  const { items: requestedItems, shippingAddress, insuranceDetails } = parsed.data;
 
   // 1. Fetch live source records to recalculate prices on the server (anti-tamper)
   const productIds = requestedItems.map((i) => i.productId);
@@ -148,9 +164,11 @@ export async function initiateCheckoutAction(
     const itemTotal = matchedProduct.basePricePaise * reqItem.quantity;
     totalAmountPaise += itemTotal;
 
+    const hasInsurance = reqItem.hasInsurance || insuranceDetails?.opted;
+
     return {
       productId: matchedProduct.id,
-      title: matchedProduct.name,
+      title: hasInsurance ? `${matchedProduct.name} (+ Fly Care Premium)` : matchedProduct.name,
       quantity: reqItem.quantity,
       unitPricePaise: matchedProduct.basePricePaise,
       isSecondHand: matchedProduct.isSecondHand,
@@ -159,6 +177,11 @@ export async function initiateCheckoutAction(
 
   const orderReference = generateOrderReference();
 
+  const finalShippingAddress = {
+    ...shippingAddress,
+    insuranceDetails: insuranceDetails?.opted ? insuranceDetails : undefined,
+  };
+
   // Keep the checkout attempt outside PostgreSQL until the customer submits a
   // UTR. The Redis entry expires with the inventory reservation.
   await redis.set(
@@ -166,7 +189,7 @@ export async function initiateCheckoutAction(
     {
       userId: session.sub,
       totalAmountPaise,
-      shippingAddress,
+      shippingAddress: finalShippingAddress,
       items: lineItemSnapshots,
     } satisfies PendingCheckout,
     { ex: PENDING_CHECKOUT_TTL_SECONDS }
@@ -208,6 +231,13 @@ export async function submitPaymentProofAction(
     return {
       success: false,
       message: "Unauthorized request. Please log in.",
+    };
+  }
+
+  if (session.role === "admin") {
+    return {
+      success: false,
+      message: "Administrator accounts cannot purchase or place orders from their own shop.",
     };
   }
 

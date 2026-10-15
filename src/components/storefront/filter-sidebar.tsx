@@ -21,6 +21,7 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
   const searchParams = useSearchParams();
 
   const currentCategory = searchParams.get("category") || "";
+  const currentBrand = searchParams.get("brand") || "";
   const currentCondition = searchParams.get("condition") || "";
   const currentSort = searchParams.get("sort") || "newest";
   const currentMinPrice = searchParams.get("minPrice") || "";
@@ -45,6 +46,7 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
 
   const hasActiveFilters =
     Boolean(currentCategory) ||
+    Boolean(currentBrand) ||
     Boolean(currentCondition) ||
     Boolean(currentMinPrice) ||
     Boolean(currentMaxPrice);
@@ -124,12 +126,19 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
           const droneCategories = categories.filter(
             (c) =>
               c.slug !== "drones" &&
-              (c.slug.includes("drone") || c.name.toLowerCase().includes("drone"))
+              (c.slug.includes("series") ||
+                c.slug.includes("drone") ||
+                c.slug.includes("avata") ||
+                c.name.toLowerCase().includes("series") ||
+                c.name.toLowerCase().includes("drone"))
           );
           const otherCategories = categories.filter(
             (c) =>
               c.slug !== "drones" &&
+              !c.slug.includes("series") &&
               !c.slug.includes("drone") &&
+              !c.slug.includes("avata") &&
+              !c.name.toLowerCase().includes("series") &&
               !c.name.toLowerCase().includes("drone")
           );
           const totalDroneCount = droneCategories.reduce(
@@ -143,10 +152,10 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
           return (
             <div>
               <span className="text-[11px] font-bold tracking-wider text-zinc-500 uppercase font-mono">
-                Component Category
+                Fleet Category
               </span>
               <div className="mt-2.5 flex max-h-72 scrollbar-thin flex-col gap-1 overflow-y-auto pr-1">
-                {/* 1. All Components */}
+                {/* 1. All Products */}
                 <button
                   type="button"
                   onClick={() => updateFilters("category", null)}
@@ -156,7 +165,7 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
                       : "text-zinc-600 hover:bg-zinc-200/70 hover:text-black font-medium"
                   }`}
                 >
-                  <span>All Components</span>
+                  <span>All Products</span>
                 </button>
 
                 {/* 2. Drones Parent Category */}
@@ -257,6 +266,48 @@ export function FilterSidebar({ categories = [] }: FilterSidebarProps) {
             </div>
           );
         })()}
+
+        {/* Hardware Brand Filter */}
+        <div>
+          <span className="text-[11px] font-bold tracking-wider text-zinc-500 uppercase font-mono">
+            Hardware Brand
+          </span>
+          <div className="mt-2.5 flex flex-col gap-1.5">
+            {[
+              { label: "All Brands", value: "" },
+              { label: "DJI Innovations", value: "DJI" },
+            ].map((b) => {
+              const isSelected =
+                (!currentBrand && b.value === "") ||
+                currentBrand.toLowerCase() === b.value.toLowerCase();
+              return (
+                <button
+                  key={b.label}
+                  type="button"
+                  onClick={() => updateFilters("brand", b.value || null)}
+                  className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
+                    isSelected
+                      ? "bg-black font-bold text-white shadow-xs"
+                      : "text-zinc-600 hover:bg-zinc-200/70 hover:text-black font-medium"
+                  }`}
+                >
+                  <span>{b.label}</span>
+                  {b.value === "DJI" && (
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase ${
+                        isSelected
+                          ? "bg-[#c8f33b] text-black"
+                          : "bg-zinc-200 text-zinc-700"
+                      }`}
+                    >
+                      OFFICIAL
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Price Range (₹) */}
         <div>

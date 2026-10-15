@@ -1,49 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { Check, CheckCircle2, Calendar, Clock, Phone, User, Sparkles, ArrowRight } from "lucide-react";
-import { bookPilotConsultation, type ConsultationResult } from "@/server/actions/consultation";
-
-const CONSULT_TYPES = [
-  "First Drone",
-  "Pre-Owned",
-  "Custom FPV",
-  "Commercial",
-] as const;
+import React from "react";
+import Link from "next/link";
+import { Check, Sparkles, ArrowRight, ShieldCheck, Headphones, Clock, Users } from "lucide-react";
 
 export function PilotConsultationBanner() {
-  const [selectedType, setSelectedType] = useState<typeof CONSULT_TYPES[number]>("First Drone");
-  const [preferredDate, setPreferredDate] = useState("Tomorrow (11:00 AM - 4:00 PM IST)");
-  const [timeSlot, setTimeSlot] = useState("11:30 AM IST");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [result, setResult] = useState<ConsultationResult | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fullName || !phone) return;
-
-    setIsSubmitting(true);
-    try {
-      const res = await bookPilotConsultation({
-        consultationType: selectedType,
-        preferredDate,
-        timeSlot,
-        fullName,
-        phone,
-      });
-      setResult(res);
-    } catch (err: any) {
-      setResult({
-        success: false,
-        message: err?.message || "Booking failed. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <section className="bg-white py-14 sm:py-18 text-zinc-900 border-b border-zinc-200/80">
       <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8">
@@ -100,159 +61,93 @@ export function PilotConsultationBanner() {
               </ul>
             </div>
 
-            {/* Right Column: Interactive Booking Card */}
+            {/* Right Column: Direct Pilot Consultation CTA Card */}
             <div className="lg:col-span-6">
-              <div className="rounded-2xl bg-white p-6 sm:p-8 text-black shadow-2xl border border-zinc-100">
+              <div className="rounded-2xl bg-white p-7 sm:p-10 text-black shadow-2xl border border-zinc-100 flex flex-col justify-between space-y-6">
                 
-                {result?.success ? (
-                  /* Success State */
-                  <div className="py-8 text-center space-y-4">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                      <CheckCircle2 className="h-8 w-8" />
+                {/* Status Header */}
+                <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                      <Headphones className="h-4 w-4" />
                     </div>
                     <div>
-                      <span className="font-mono text-xs font-bold uppercase tracking-wider text-zinc-400">
-                        CONFIRMATION ID: {result.referenceId}
+                      <span className="text-xs font-black tracking-tight text-black block">
+                        Altitude Pilot Desk
                       </span>
-                      <h3 className="mt-1 text-2xl font-black text-black">
-                        Flight Consultation Reserved!
-                      </h3>
-                      <p className="mt-2 text-xs text-zinc-600 max-w-sm mx-auto leading-relaxed">
-                        {result.message}
-                      </p>
-                    </div>
-
-                    <div className="pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setResult(null)}
-                        className="rounded-full border border-zinc-200 bg-zinc-50 px-5 py-2 text-xs font-bold text-black hover:bg-zinc-100 transition"
-                      >
-                        Book Another Session
-                      </button>
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">
+                        Senior Flight Engineers Active
+                      </span>
                     </div>
                   </div>
-                ) : (
-                  /* Interactive Form */
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Card Header */}
-                    <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-                      <span className="text-xs font-bold tracking-tight text-black">
-                        Select Consultation Type
+                  
+                  <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Slots available today</span>
+                  </div>
+                </div>
+
+                {/* Consultation Topics Pills */}
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                    Available Specializations
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2 rounded-xl bg-zinc-50 p-2.5 border border-zinc-100 font-medium text-zinc-800">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      <span>Cinematic & 4K/8K Video</span>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl bg-zinc-50 p-2.5 border border-zinc-100 font-medium text-zinc-800">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      <span>FPV Acro & Tuning</span>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl bg-zinc-50 p-2.5 border border-zinc-100 font-medium text-zinc-800">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      <span>Refurbished Quality Check</span>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl bg-zinc-50 p-2.5 border border-zinc-100 font-medium text-zinc-800">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      <span>Commercial & Surveying</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Prominent Action Button */}
+                <div className="pt-2">
+                  <Link
+                    href="/consult-pilot"
+                    className="group flex w-full items-center justify-between rounded-2xl bg-black px-6 py-5 text-white shadow-xl hover:bg-zinc-900 transition-all active:scale-[0.99] border border-zinc-800"
+                  >
+                    <div className="flex flex-col text-left">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#c8f33b]">
+                        Free 20-Min 1-on-1 Session
                       </span>
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>Slots available today</span>
-                      </div>
+                      <span className="text-base sm:text-lg font-black tracking-tight text-white mt-0.5 group-hover:text-[#c8f33b] transition-colors">
+                        Book Pilot Consultation
+                      </span>
                     </div>
-
-                    {/* Consultation Type Selector Pills */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {CONSULT_TYPES.map((type) => {
-                        const isSelected = selectedType === type;
-                        return (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => setSelectedType(type)}
-                            className={`rounded-xl py-2 px-2 text-xs font-bold text-center transition-all ${
-                              isSelected
-                                ? "bg-black text-white shadow-xs"
-                                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                            }`}
-                          >
-                            {type}
-                          </button>
-                        );
-                      })}
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#c8f33b] text-black group-hover:translate-x-1.5 transition-transform shadow-md">
+                      <ArrowRight className="h-5 w-5 stroke-[2.5]" />
                     </div>
+                  </Link>
+                </div>
 
-                    {/* Row 1: Preferred Date & Time Slot */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 mb-1">
-                          PREFERRED DATE
-                        </label>
-                        <select
-                          value={preferredDate}
-                          onChange={(e) => setPreferredDate(e.target.value)}
-                          className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-medium text-black focus:border-black focus:outline-none"
-                        >
-                          <option>Tomorrow (11:00 AM - 4:00 PM IST)</option>
-                          <option>Wednesday (10:00 AM - 2:00 PM IST)</option>
-                          <option>Thursday (2:00 PM - 6:00 PM IST)</option>
-                          <option>Friday (11:00 AM - 5:00 PM IST)</option>
-                          <option>Saturday (Weekend Flight Desk)</option>
-                        </select>
-                      </div>
+                {/* Footer Micro-perks */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 pt-3 text-[11px] text-zinc-500">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-zinc-400" />
+                    <span>Avg. Response &lt; 15 mins</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>100% Technical Guidance</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-zinc-400" />
+                    <span>Google Meet or WhatsApp</span>
+                  </div>
+                </div>
 
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 mb-1">
-                          TIME SLOT
-                        </label>
-                        <select
-                          value={timeSlot}
-                          onChange={(e) => setTimeSlot(e.target.value)}
-                          className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-medium text-black focus:border-black focus:outline-none"
-                        >
-                          <option>11:30 AM IST</option>
-                          <option>1:00 PM IST</option>
-                          <option>3:30 PM IST</option>
-                          <option>5:00 PM IST</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Row 2: Name & Phone */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 mb-1">
-                          YOUR NAME
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          placeholder="Aarav Sharma"
-                          className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-medium text-black placeholder-zinc-400 focus:border-black focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 mb-1">
-                          WHATSAPP / PHONE
-                        </label>
-                        <input
-                          type="tel"
-                          required
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+91 98765 43210"
-                          className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-medium text-black placeholder-zinc-400 focus:border-black focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Action Button */}
-                    <div className="pt-2">
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3.5 text-xs font-black uppercase tracking-wider text-white shadow-md hover:bg-zinc-800 transition active:scale-98 disabled:opacity-50"
-                      >
-                        <span>{isSubmitting ? "Reserving Slot..." : "CONFIRM PILOT CONSULTATION"}</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-
-                    {result?.message && !result.success && (
-                      <p className="text-center text-xs text-rose-600 font-medium">
-                        {result.message}
-                      </p>
-                    )}
-                  </form>
-                )}
               </div>
             </div>
 
@@ -262,3 +157,4 @@ export function PilotConsultationBanner() {
     </section>
   );
 }
+

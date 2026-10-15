@@ -3,10 +3,12 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, Plus, ShieldCheck } from "lucide-react";
 import { formatINR } from "@/lib/utils";
 import { resolveImageUrl } from "@/lib/media";
 import { isValidProductId, useCartStore } from "@/stores/cart-store";
+import { checkAddToCartAllowed } from "@/lib/auth-client";
 
 export interface ProductCardData {
   id: string;
@@ -50,6 +52,7 @@ function getCardFallbackImage(name: string, sku: string): string {
 }
 
 export function ProductCard(props: ProductCardProps) {
+  const router = useRouter();
   const product: ProductCardData = props.product || {
     id: props.id || "",
     slug: props.slug || "",
@@ -89,9 +92,21 @@ export function ProductCard(props: ProductCardProps) {
   const grade =
     product.secondHandDetails?.cosmeticGrade || props.cosmeticGrade || "A";
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (isOutOfStock) return;
+
+    const guard = await checkAddToCartAllowed();
+    if (!guard.allowed) {
+      if (guard.reason === "unauthenticated") {
+        router.push(guard.loginUrl);
+        return;
+      }
+      if (guard.reason === "admin") {
+        alert(guard.message);
+        return;
+      }
+    }
 
     addItem({
       productId: product.id,
@@ -115,12 +130,6 @@ export function ProductCard(props: ProductCardProps) {
           <span className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
             <ShieldCheck className="h-3 w-3" />
             Grade {grade} Pre-Owned
-          </span>
-        )}
-
-        {isLowStock && (
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-            Only {product.stockQuantity} left
           </span>
         )}
       </div>

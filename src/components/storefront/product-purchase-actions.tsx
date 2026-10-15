@@ -10,9 +10,8 @@ import {
   Check, 
   ShieldCheck, 
   Truck,
-  CreditCard,
   Shield,
-  Wrench
+  AlertTriangle
 } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { formatINR } from "@/lib/utils";
@@ -27,47 +26,53 @@ interface ProductPurchaseActionsProps {
     isSecondHand: boolean;
     thumbnailUrl: string;
     mrpPricePaise?: number | null;
-    emiStartsFromPaise?: number | null;
   };
 }
+
+import { checkAddToCartAllowed } from "@/lib/auth-client";
 
 export function ProductPurchaseActions({
   product,
 }: ProductPurchaseActionsProps) {
   const [quantity, setQuantity] = useState(1);
-  const [selectedCombo, setSelectedCombo] = useState<"standard" | "combo">("combo");
   const [addInsurance, setAddInsurance] = useState(false);
-  const [addAmc, setAddAmc] = useState(false);
   const [addedToast, setAddedToast] = useState(false);
+  const [restrictionError, setRestrictionError] = useState<string | null>(null);
   const router = useRouter();
 
   const { addItem, setIsOpen } = useCartStore();
   const isAvailable = product.stockQuantity > 0;
 
-  // Pricing calculations
+  // Pricing calculations (No EMI)
   const mrpPaise = product.mrpPricePaise || Math.round(product.basePricePaise * 1.25);
   const discountPercent = Math.max(0, Math.round(((mrpPaise - product.basePricePaise) / mrpPaise) * 100));
-  const emiPaise = product.emiStartsFromPaise || Math.round(product.basePricePaise / 18);
 
-  const insurancePricePaise = 849900;
-  const amcPricePaise = 499900;
-
-  let calculatedPricePaise = product.basePricePaise;
-  if (addInsurance) calculatedPricePaise += insurancePricePaise;
-  if (addAmc) calculatedPricePaise += amcPricePaise;
-
-  function handleAddToCart() {
+  async function handleAddToCart() {
     if (!isAvailable) return;
+    setRestrictionError(null);
+
+    const guard = await checkAddToCartAllowed();
+    if (!guard.allowed) {
+      if (guard.reason === "unauthenticated") {
+        router.push(guard.loginUrl);
+        return;
+      }
+      if (guard.reason === "admin") {
+        setRestrictionError(guard.message);
+        return;
+      }
+    }
 
     addItem({
       productId: product.id,
-      name: `${product.name} (${selectedCombo === "combo" ? "Fly More Combo" : "Standard Pack"})${addInsurance ? " + Shield 1Y" : ""}`,
+      name: `${product.name}${addInsurance ? " + Fly Care Premium" : ""}`,
       slug: product.slug,
-      basePricePaise: calculatedPricePaise,
+      basePricePaise: product.basePricePaise,
       thumbnailUrl: product.thumbnailUrl,
       isSecondHand: product.isSecondHand,
       quantity,
       stockAvailable: product.stockQuantity,
+      hasInsurance: addInsurance,
     });
 
     setAddedToast(true);
@@ -77,18 +82,32 @@ export function ProductPurchaseActions({
     }, 400);
   }
 
-  function handleBuyNow() {
+  async function handleBuyNow() {
     if (!isAvailable) return;
+    setRestrictionError(null);
+
+    const guard = await checkAddToCartAllowed();
+    if (!guard.allowed) {
+      if (guard.reason === "unauthenticated") {
+        router.push(guard.loginUrl);
+        return;
+      }
+      if (guard.reason === "admin") {
+        setRestrictionError(guard.message);
+        return;
+      }
+    }
 
     addItem({
       productId: product.id,
-      name: `${product.name} (${selectedCombo === "combo" ? "Fly More Combo" : "Standard Pack"})${addInsurance ? " + Shield 1Y" : ""}`,
+      name: `${product.name}${addInsurance ? " + Fly Care Premium" : ""}`,
       slug: product.slug,
-      basePricePaise: calculatedPricePaise,
+      basePricePaise: product.basePricePaise,
       thumbnailUrl: product.thumbnailUrl,
       isSecondHand: product.isSecondHand,
       quantity,
       stockAvailable: product.stockQuantity,
+      hasInsurance: addInsurance,
     });
 
     router.push("/checkout");
@@ -104,11 +123,19 @@ export function ProductPurchaseActions({
         </div>
       )}
 
-      {/* Strike-Through Price, Discount & EMI Badge */}
+      {/* Admin / Restriction Notice */}
+      {restrictionError && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs font-medium text-amber-900 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+          <span>{restrictionError}</span>
+        </div>
+      )}
+
+      {/* Strike-Through Price & Discount Badge (No EMI) */}
       <div className="rounded-xl border border-zinc-200/90 bg-zinc-50/80 p-4 space-y-2">
         <div className="flex flex-wrap items-baseline gap-3">
           <span className="text-3xl sm:text-4xl font-black tracking-tight text-black font-mono">
-            {formatINR(calculatedPricePaise)}
+            {formatINR(product.basePricePaise)}
           </span>
           {mrpPaise > product.basePricePaise && (
             <span className="text-sm font-semibold text-zinc-400 line-through font-mono">
@@ -121,125 +148,42 @@ export function ProductPurchaseActions({
             </span>
           )}
         </div>
-
-        {/* EMI Strip */}
-        <div className="flex items-center gap-2 pt-1 text-xs text-zinc-600 font-medium">
-          <CreditCard className="h-3.5 w-3.5 text-zinc-500" />
-          <span>EMI starting at <strong className="text-black font-mono">{formatINR(emiPaise)}/mo</strong> with major banks</span>
-        </div>
       </div>
 
-      {/* Package Variant Selector */}
-      <div className="space-y-2">
-        <label className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-500">
-          Select Flight Configuration:
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={() => setSelectedCombo("combo")}
-            className={`flex flex-col text-left rounded-xl border p-3 transition-all cursor-pointer ${
-              selectedCombo === "combo"
-                ? "border-black bg-white shadow-xs ring-1 ring-black/5"
-                : "border-zinc-200 bg-zinc-50/60 hover:bg-zinc-50"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-black">Fly More Combo</span>
-              <span className="rounded bg-[#c8f33b] px-1.5 py-0.2 text-[9px] font-black uppercase text-black">
-                Most Popular
-              </span>
-            </div>
-            <span className="mt-1 text-[11px] text-zinc-500">Includes DJI RC 2, 3x Batteries, Hub & Bag</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedCombo("standard")}
-            className={`flex flex-col text-left rounded-xl border p-3 transition-all cursor-pointer ${
-              selectedCombo === "standard"
-                ? "border-black bg-white shadow-xs ring-1 ring-black/5"
-                : "border-zinc-200 bg-zinc-50/60 hover:bg-zinc-50"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-black">Standard Pack</span>
-              <span className="text-[10px] text-zinc-400 font-mono">Base Rig</span>
-            </div>
-            <span className="mt-1 text-[11px] text-zinc-500">Includes DJI RC-N3 (Phone Mount), 1x Battery</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Commercial Protection & AMC Add-ons (Checkboxes) */}
+      {/* Protection & AMC Add-ons (Fly Care Premium Single Checkbox) */}
       <div className="space-y-2">
         <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-500">
           Protection & AMC Add-ons:
         </span>
-        <div className="space-y-2">
-          {/* Insurance */}
-          <div
-            onClick={() => setAddInsurance(!addInsurance)}
-            className={`flex items-center justify-between rounded-xl border p-3 cursor-pointer transition ${
-              addInsurance
-                ? "border-black bg-white shadow-xs"
-                : "border-zinc-200 bg-zinc-50/60 hover:bg-zinc-50"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex h-4.5 w-4.5 items-center justify-center rounded border transition ${
-                  addInsurance ? "border-black bg-black text-white" : "border-zinc-300 bg-white"
-                }`}
-              >
-                {addInsurance && <Check className="h-3 w-3 stroke-[3]" />}
-              </div>
-              <div>
-                <span className="text-xs font-bold text-black flex items-center gap-1.5">
-                  <Shield className="h-3.5 w-3.5 text-blue-600" />
-                  Altitude Shield 1-Year Protection Plan
-                </span>
-                <span className="text-[10px] text-zinc-500 block">
-                  Includes 2 accidental damage replacements & water impact coverage
-                </span>
-              </div>
+        <div
+          onClick={() => setAddInsurance(!addInsurance)}
+          className={`flex items-center justify-between rounded-xl border p-3.5 cursor-pointer transition select-none ${
+            addInsurance
+              ? "border-black bg-white shadow-xs ring-1 ring-black/5"
+              : "border-zinc-200 bg-zinc-50/60 hover:bg-zinc-50"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-5 w-5 items-center justify-center rounded border transition ${
+                addInsurance ? "border-black bg-black text-white" : "border-zinc-300 bg-white"
+              }`}
+            >
+              {addInsurance && <Check className="h-3.5 w-3.5 stroke-[3]" />}
             </div>
-            <span className="text-xs font-bold font-mono text-black shrink-0">
-              +{formatINR(insurancePricePaise)}
-            </span>
-          </div>
-
-          {/* AMC Calibration */}
-          <div
-            onClick={() => setAddAmc(!addAmc)}
-            className={`flex items-center justify-between rounded-xl border p-3 cursor-pointer transition ${
-              addAmc
-                ? "border-black bg-white shadow-xs"
-                : "border-zinc-200 bg-zinc-50/60 hover:bg-zinc-50"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex h-4.5 w-4.5 items-center justify-center rounded border transition ${
-                  addAmc ? "border-black bg-black text-white" : "border-zinc-300 bg-white"
-                }`}
-              >
-                {addAmc && <Check className="h-3 w-3 stroke-[3]" />}
-              </div>
-              <div>
-                <span className="text-xs font-bold text-black flex items-center gap-1.5">
-                  <Wrench className="h-3.5 w-3.5 text-amber-600" />
-                  Annual Flight Lab Maintenance & Sensor Calibration
-                </span>
-                <span className="text-[10px] text-zinc-500 block">
-                  Periodic telemetry checkup, firmware tuning, and gimbal balance
-                </span>
-              </div>
+            <div>
+              <span className="text-xs font-bold text-black flex items-center gap-1.5">
+                <Shield className="h-4 w-4 text-emerald-600" />
+                Fly Care Premium
+              </span>
+              <span className="text-[11px] text-zinc-500 block mt-0.5">
+                Official accidental damage coverage, rapid replacement & water impact warranty
+              </span>
             </div>
-            <span className="text-xs font-bold font-mono text-black shrink-0">
-              +{formatINR(amcPricePaise)}
-            </span>
           </div>
+          <span className="text-xs font-mono font-bold text-black shrink-0 ml-3 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded">
+            +₹XXXX
+          </span>
         </div>
       </div>
 

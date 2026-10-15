@@ -1,15 +1,19 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, MapPin, ShieldCheck, ShoppingBag } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, AlertTriangle, Loader2, MapPin, Shield, ShieldCheck, ShoppingBag, UserCheck } from "lucide-react";
 import { isValidProductId, useCartStore } from "@/stores/cart-store";
 import { formatINR } from "@/lib/utils";
 import { initiateCheckoutAction, type CheckoutInitResponse } from "@/server/actions/checkout";
 import { UpiQrDisplay } from "@/components/storefront/upi-qr-display";
 import { PaymentProofForm } from "@/components/storefront/payment-proof-form";
+import { useUserSession } from "@/lib/auth-client";
 
 export default function CheckoutPage() {
+  const router = useRouter();
+  const session = useUserSession();
   const { items, getTotalPaise, clearCart } = useCartStore();
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -26,11 +30,57 @@ export default function CheckoutPage() {
   const [stateName, setStateName] = useState("");
   const [pincode, setPincode] = useState("");
 
+  // Check if any cart item has insurance opted
+  const hasAnyInsurance = items.some((i) => i.hasInsurance);
+
+  // Insurance Form State
+  const [insuranceFullName, setInsuranceFullName] = useState("");
+  const [insurancePhone, setInsurancePhone] = useState("");
+  const [insuranceEmail, setInsuranceEmail] = useState("");
+  const [dronePurpose, setDronePurpose] = useState("Commercial & Cinematography");
+  const [nomineeName, setNomineeName] = useState("");
+
   const [isInitiating, setIsInitiating] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutData, setCheckoutData] = useState<CheckoutInitResponse | null>(null);
 
-  if (!mounted) return null;
+  // Redirect to login if user is not authenticated once session loading completes
+  useEffect(() => {
+    if (mounted && !session.isLoading && !session.isAuthenticated) {
+      router.push("/login?callbackUrl=/checkout");
+    }
+  }, [mounted, session.isLoading, session.isAuthenticated, router]);
+
+  if (!mounted || session.isLoading) {
+    return (
+      <div className="min-h-[70vh] bg-white flex flex-col items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+        <p className="mt-3 text-xs font-mono text-zinc-500 uppercase tracking-wider">
+          Verifying pilot clearance...
+        </p>
+      </div>
+    );
+  }
+
+  if (!session.isAuthenticated) {
+    return (
+      <div className="min-h-[70vh] bg-white text-zinc-900 flex flex-col items-center justify-center px-4 py-20 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-zinc-600">
+          <UserCheck className="h-8 w-8 text-black" />
+        </div>
+        <h1 className="mt-4 text-2xl font-black text-black">Authentication Required</h1>
+        <p className="mt-2 text-xs sm:text-sm text-zinc-600 max-w-sm">
+          Please log in to your account to complete checkout and order your drone gear.
+        </p>
+        <Link
+          href="/login?callbackUrl=/checkout"
+          className="mt-6 rounded-full bg-black px-6 py-3 text-xs sm:text-sm font-bold text-white hover:bg-zinc-800 transition shadow-xs"
+        >
+          Sign In with Phone / Email
+        </Link>
+      </div>
+    );
+  }
 
   if (items.length === 0 && !checkoutData) {
     return (
@@ -69,11 +119,20 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (session.role === "admin") {
+      setCheckoutError("Administrator accounts cannot purchase or place orders from their own shop.");
+      return;
+    }
+
     setIsInitiating(true);
 
     try {
       const response = await initiateCheckoutAction({
-        items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        items: items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          hasInsurance: !!i.hasInsurance,
+        })),
         shippingAddress: {
           fullName,
           phone,
@@ -83,6 +142,16 @@ export default function CheckoutPage() {
           state: stateName,
           pincode,
         },
+        insuranceDetails: hasAnyInsurance
+          ? {
+              opted: true,
+              fullName: insuranceFullName || fullName,
+              phone: insurancePhone || phone,
+              email: insuranceEmail,
+              dronePurpose,
+              nomineeName,
+            }
+          : undefined,
       });
 
       if (!response.success || !response.data) {
@@ -218,9 +287,93 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* Fly Care Premium Insurance Registration Form */}
+              {hasAnyInsurance && (
+                <div className="rounded-3xl border border-emerald-300 bg-emerald-50/60 p-6 sm:p-8 shadow-md">
+                  <div className="flex items-center gap-2 border-b border-emerald-200 pb-4 text-sm font-bold text-emerald-950">
+                    <Shield className="h-4 w-4 text-emerald-700" />
+                    <span>Fly Care Premium • Policyholder Registration</span>
+                  </div>
+                  <p className="mt-2 text-xs text-emerald-800 leading-relaxed">
+                    You selected <strong className="font-bold">Fly Care Premium</strong> insurance for your flight system. Please enter the pilot / organization details for official policy issuance and damage replacement warranty.
+                  </p>
+
+                  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-700">Policyholder / Pilot Name</label>
+                      <input
+                        type="text"
+                        required={hasAnyInsurance}
+                        placeholder={fullName || "Pilot / Organization Name"}
+                        value={insuranceFullName}
+                        onChange={(e) => setInsuranceFullName(e.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-xs text-zinc-900 focus:border-black focus:outline-none shadow-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-700">Insurance Mobile Number</label>
+                      <input
+                        type="tel"
+                        required={hasAnyInsurance}
+                        maxLength={10}
+                        placeholder={phone || "10-digit mobile"}
+                        value={insurancePhone}
+                        onChange={(e) => setInsurancePhone(e.target.value.replace(/\D/g, ""))}
+                        className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-xs text-zinc-900 focus:border-black focus:outline-none shadow-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-700">Policy Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="pilot@domain.com"
+                        value={insuranceEmail}
+                        onChange={(e) => setInsuranceEmail(e.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-xs text-zinc-900 focus:border-black focus:outline-none shadow-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-700">Primary Flight Application</label>
+                      <select
+                        value={dronePurpose}
+                        onChange={(e) => setDronePurpose(e.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-xs text-zinc-900 focus:border-black focus:outline-none shadow-xs"
+                      >
+                        <option value="Commercial Cinematography & Video">Commercial Cinematography & Video</option>
+                        <option value="Industrial Inspection & Mapping">Industrial Inspection & Mapping</option>
+                        <option value="Agricultural Surveying">Agricultural Surveying</option>
+                        <option value="Recreational & Aerial Photography">Recreational & Aerial Photography</option>
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-semibold text-zinc-700">Nominee / Emergency Contact (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="Nominee Full Name"
+                        value={nomineeName}
+                        onChange={(e) => setNomineeName(e.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-xs text-zinc-900 focus:border-black focus:outline-none shadow-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {session.role === "admin" && (
+                <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 flex items-start gap-3">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Admin Account Restriction</p>
+                    <p className="mt-0.5 text-amber-800 leading-relaxed">
+                      Administrator accounts cannot purchase or place orders from their own shop. Please sign in with a customer account to test orders.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={isInitiating}
+                disabled={isInitiating || session.role === "admin"}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-[#c8f33b] px-6 py-3.5 text-sm font-bold text-black shadow-xs transition hover:bg-[#b8e530] disabled:opacity-50 active:scale-95"
               >
                 {isInitiating ? (
@@ -228,6 +381,8 @@ export default function CheckoutPage() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Locking Inventory & Generating QR...</span>
                   </>
+                ) : session.role === "admin" ? (
+                  <span>Purchases Disabled for Admin Accounts</span>
                 ) : (
                   <span>Proceed to UPI Payment</span>
                 )}

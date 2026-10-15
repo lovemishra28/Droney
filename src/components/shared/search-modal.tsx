@@ -72,7 +72,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search gear, certified drones, prop, motors..."
+            placeholder="Search airframes, payloads, sensors..."
             className="flex-1 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
             autoFocus
           />

@@ -10,11 +10,13 @@ export interface CartItem {
   thumbnailUrl: string;
   isSecondHand: boolean;
   stockAvailable: number;
+  hasInsurance?: boolean;
 }
 
 export type AddCartItemInput = Omit<CartItem, "quantity" | "stockAvailable"> & {
   quantity?: number;
   stockAvailable?: number;
+  hasInsurance?: boolean;
 };
 
 export const productIdPattern =
@@ -90,6 +92,7 @@ export const useCartStore = create<CartStoreState>()(
                 thumbnailUrl: item.thumbnailUrl,
                 isSecondHand: item.isSecondHand,
                 stockAvailable: available,
+                hasInsurance: !!item.hasInsurance,
                 quantity: Math.min(qty, available),
               },
             ],

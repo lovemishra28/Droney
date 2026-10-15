@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  brands,
   categories,
   droneSpecifications,
   productMedia,
@@ -14,6 +15,7 @@ export interface CatalogFilterParams {
   page?: number;
   pageSize?: number;
   categorySlug?: string;
+  brand?: string;
   isSecondHand?: boolean;
   minPricePaise?: number;
   maxPricePaise?: number;
@@ -86,6 +88,7 @@ export async function getProducts(params: CatalogFilterParams = {}) {
     page = 1,
     pageSize = 24,
     categorySlug,
+    brand,
     isSecondHand,
     minPricePaise,
     maxPricePaise,
@@ -103,6 +106,10 @@ export async function getProducts(params: CatalogFilterParams = {}) {
     conditions.push(eq(products.isSecondHand, isSecondHand));
   }
 
+  if (brand && brand.trim().length > 0) {
+    conditions.push(ilike(products.brand, `%${brand.trim()}%`));
+  }
+
   if (minPricePaise !== undefined) {
     conditions.push(gte(products.basePricePaise, minPricePaise));
   }
@@ -117,7 +124,8 @@ export async function getProducts(params: CatalogFilterParams = {}) {
       or(
         ilike(products.name, term),
         ilike(products.sku, term),
-        ilike(products.description, term)
+        ilike(products.description, term),
+        ilike(products.brand, term)
       )!
     );
   }
@@ -125,10 +133,13 @@ export async function getProducts(params: CatalogFilterParams = {}) {
   if (categorySlug) {
     try {
       if (categorySlug === "drones") {
-        // Query all drone categories (camera-drones, fpv-drones, mini-drone, professional-drone, used-drones)
+        // Query all drone categories (mini-series, air-series, mavic-series, avata-series, used-drones)
         const droneCategories = await db.query.categories.findMany({
           where: or(
+            ilike(categories.slug, "%series%"),
             ilike(categories.slug, "%drone%"),
+            ilike(categories.slug, "%avata%"),
+            ilike(categories.name, "%series%"),
             ilike(categories.name, "%drone%")
           ),
           columns: { id: true },
@@ -340,6 +351,61 @@ export async function getPreOwnedDrones(
 }
 
 /**
+ * Retrieves the latest 4 modified brand-new arrivals for the homepage single-row showcase.
+ */
+export async function getLatestModifiedNewArrivals(limitCount = 4) {
+  try {
+    return await db.query.products.findMany({
+      where: and(
+        eq(products.status, "active"),
+        eq(products.isSecondHand, false)
+      ),
+      limit: limitCount,
+      orderBy: [desc(products.updatedAt)],
+      with: {
+        category: true,
+        media: {
+          orderBy: [asc(productMedia.displayOrder)],
+        },
+        specifications: true,
+        showcase: true,
+      },
+    });
+  } catch (error) {
+    console.error("[Get Latest Modified New Arrivals Error]:", error);
+    return [];
+  }
+}
+
+/**
+ * Retrieves the latest 2 modified certified pre-owned drones for the homepage showcase.
+ */
+export async function getLatestModifiedPreOwned(limitCount = 2) {
+  try {
+    return await db.query.products.findMany({
+      where: and(
+        eq(products.status, "active"),
+        eq(products.isSecondHand, true)
+      ),
+      limit: limitCount,
+      orderBy: [desc(products.updatedAt)],
+      with: {
+        category: true,
+        media: {
+          orderBy: [asc(productMedia.displayOrder)],
+        },
+        secondHandDetails: true,
+        specifications: true,
+        showcase: true,
+      },
+    });
+  } catch (error) {
+    console.error("[Get Latest Modified Pre-Owned Error]:", error);
+    return [];
+  }
+}
+
+/**
  * Fast typeahead search query returning top 6 matched items for quick dropdowns.
  */
 export async function quickSearchProducts(term: string) {
@@ -410,3 +476,31 @@ export async function getRelatedProducts(
     return [];
   }
 }
+
+/**
+ * Retrieves all registered brands for catalog filtering and brand showcases.
+ */
+export const getCatalogBrands = unstable_cache(
+  async () => {
+    return getCachedOrFetch(
+      "catalog:brands:list",
+      async () => {
+        try {
+          return await db.query.brands.findMany({
+            orderBy: [asc(brands.name)],
+          });
+        } catch (error) {
+          console.error("[Catalog Brands Query Error]:", error);
+          return [];
+        }
+      },
+      { ttlSeconds: 120 }
+    );
+  },
+  ["catalog-brands"],
+  {
+    revalidate: 120,
+    tags: ["catalog", "brands"],
+  }
+);
+

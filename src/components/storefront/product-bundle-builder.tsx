@@ -2,9 +2,11 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus, Check, ShoppingBag, Sparkles } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { formatINR } from "@/lib/utils";
+import { checkAddToCartAllowed } from "@/lib/auth-client";
 
 interface BundleItem {
   id: string;
@@ -29,6 +31,7 @@ interface ProductBundleBuilderProps {
 export function ProductBundleBuilder({
   primaryProduct,
 }: ProductBundleBuilderProps) {
+  const router = useRouter();
   const { addItem, setIsOpen } = useCartStore();
 
   const bundleItems: BundleItem[] = [
@@ -87,7 +90,19 @@ export function ProductBundleBuilder({
 
   const savingsPaise = Math.max(0, originalTotalPaise - totalPaise);
 
-  const handleAddBundleToCart = () => {
+  const handleAddBundleToCart = async () => {
+    const guard = await checkAddToCartAllowed();
+    if (!guard.allowed) {
+      if (guard.reason === "unauthenticated") {
+        router.push(guard.loginUrl);
+        return;
+      }
+      if (guard.reason === "admin") {
+        alert(guard.message);
+        return;
+      }
+    }
+
     activeBundleItems.forEach((item) => {
       addItem({
         productId: item.id,
@@ -113,7 +128,7 @@ export function ProductBundleBuilder({
       {/* Toast */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-black px-4 py-2.5 text-xs font-bold text-white shadow-2xl animate-in slide-in-from-bottom-3">
-          <span className="h-2 w-2 rounded-full bg-[#c8f33b]" />
+          <Check className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}

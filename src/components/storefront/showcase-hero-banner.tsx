@@ -76,25 +76,42 @@ export function ShowcaseHeroBanner({
         </div>
 
         {/* 4 Big Stat Metric Counters */}
-        <div className="mt-16 sm:mt-20 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 border-t border-zinc-800/80 pt-12">
-          {displayMetrics.map((item, idx) => (
-            <div
-              key={idx}
-              className="flex flex-col items-center text-center p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 hover:border-zinc-700 transition"
-            >
-              <div className="flex items-baseline gap-1.5 font-mono">
-                <span className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight">
-                  {item.value}
-                </span>
-                <span className="text-sm sm:text-base font-bold text-[#c8f33b]">
-                  {item.unit}
+        <div className="mt-16 sm:mt-20 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 border-t border-zinc-800/80 pt-12">
+          {displayMetrics.map((item, idx) => {
+            const valLen = item.value?.length || 0;
+            const textSizeClass =
+              valLen > 12
+                ? "text-base sm:text-lg lg:text-xl"
+                : valLen > 7
+                ? "text-xl sm:text-2xl lg:text-3xl"
+                : valLen > 4
+                ? "text-2xl sm:text-3xl lg:text-4xl"
+                : "text-3xl sm:text-4xl lg:text-5xl";
+
+            return (
+              <div
+                key={idx}
+                className="flex flex-col items-center justify-center text-center p-4 sm:p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 hover:border-zinc-700 transition"
+              >
+                <div className="flex items-baseline justify-center gap-1.5 font-mono max-w-full">
+                  <span
+                    className={`${textSizeClass} font-black text-white tracking-tight break-words`}
+                    title={item.value}
+                  >
+                    {item.value}
+                  </span>
+                  {item.unit && (
+                    <span className="text-xs sm:text-sm font-bold text-[#c8f33b] shrink-0">
+                      {item.unit}
+                    </span>
+                  )}
+                </div>
+                <span className="mt-2 text-[11px] sm:text-xs font-medium text-zinc-400 tracking-wide uppercase">
+                  {item.label}
                 </span>
               </div>
-              <span className="mt-2 text-xs sm:text-sm font-medium text-zinc-400 tracking-wide">
-                {item.label}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
       </div>

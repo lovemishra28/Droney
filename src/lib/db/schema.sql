@@ -20,7 +20,19 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users (phone);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 
--- 2. Catalog & Component Taxonomy Layer (500+ SKUs)
+-- 2. Catalog & Component Taxonomy Layer
+CREATE TABLE IF NOT EXISTS brands (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(140) UNIQUE NOT NULL,
+  description TEXT,
+  logo_url TEXT,
+  website_url VARCHAR(255),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_brands_slug ON brands (slug);
+
 CREATE TABLE IF NOT EXISTS categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL,
@@ -35,6 +47,8 @@ CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories (slug);
 CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  brand_id UUID REFERENCES brands(id) ON DELETE SET NULL,
+  brand VARCHAR(100) NOT NULL DEFAULT 'DJI',
   slug VARCHAR(255) UNIQUE NOT NULL,
   sku VARCHAR(64) UNIQUE NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -49,6 +63,9 @@ CREATE TABLE IF NOT EXISTS products (
 
 -- Fast catalog routing and typeahead searches
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products (slug);
+CREATE INDEX IF NOT EXISTS idx_products_sku ON products (sku);
+CREATE INDEX IF NOT EXISTS idx_products_brand ON products (brand);
+CREATE INDEX IF NOT EXISTS idx_products_brand_id ON products (brand_id);
 CREATE INDEX IF NOT EXISTS idx_products_category_status ON products (category_id, status);
 CREATE INDEX IF NOT EXISTS idx_products_price ON products (base_price_paise);
 CREATE INDEX IF NOT EXISTS idx_products_second_hand ON products (is_second_hand) WHERE status = 'active';
@@ -59,7 +76,7 @@ CREATE TABLE IF NOT EXISTS drone_specifications (
   frame_size_mm INTEGER,
   weight_grams INTEGER,
   input_voltage_lipo VARCHAR(32),
-  motor_kv VARCHAR(32),
+  motor_kv VARCHAR(128),
   fc_firmware VARCHAR(64),
   esc_protocol VARCHAR(64),
   flight_time_minutes INTEGER,

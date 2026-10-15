@@ -17,6 +17,7 @@ import {
 import {
   createSessionCookie,
   deleteSessionCookie,
+  getCurrentSession,
 } from "@/server/services/session";
 import {
   requestOtpSchema,
@@ -239,3 +240,30 @@ export async function verifyOtpAndLogin(
   }
   return result;
 }
+
+/**
+ * Lightweight safe session info for client-side authorization and restrictions.
+ */
+export async function getClientSessionAction(): Promise<{
+  isAuthenticated: boolean;
+  role: "customer" | "admin" | null;
+  userId: string | null;
+  fullName: string | null;
+}> {
+  const session = await getCurrentSession();
+  if (!session) {
+    return {
+      isAuthenticated: false,
+      role: null,
+      userId: null,
+      fullName: null,
+    };
+  }
+  return {
+    isAuthenticated: true,
+    role: session.role === "admin" ? "admin" : "customer",
+    userId: session.sub,
+    fullName: session.fullName || null,
+  };
+}
+

@@ -1,30 +1,41 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { db } from "@/lib/db";
-import { products } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { ArrowLeft, ExternalLink } from "lucide-react";
+import { asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { formatINR } from "@/lib/utils";
+import { db } from "@/lib/db";
+import { productMedia, products } from "@/lib/db/schema";
+import { requireAdminSession } from "@/server/queries/admin";
+import { EditProductForm, type EditableProduct } from "@/components/admin/edit-product-form";
+
+export const dynamic = "force-dynamic";
 
 export default async function EditProductPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminSession();
   const { id } = await params;
 
-  let product = null;
+  let product: EditableProduct | null = null;
   try {
-    product = await db.query.products.findFirst({
+    const record = await db.query.products.findFirst({
       where: eq(products.id, id),
       with: {
         category: true,
-        media: true,
+        media: {
+          orderBy: [asc(productMedia.displayOrder)],
+        },
         specifications: true,
         secondHandDetails: true,
+        showcase: true,
       },
     });
+
+    if (record) {
+      product = record as unknown as EditableProduct;
+    }
   } catch (error) {
     console.error("[Edit Product Page DB Error]:", error);
   }
@@ -34,72 +45,48 @@ export default async function EditProductPage({
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-5">
+    <div className="max-w-5xl space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800/80 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-[#c8f33b]" />
-            <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#c8f33b]">
-              Catalog Inventory Record
+            <span className="flex h-2 w-2 rounded-full bg-lime-500 dark:bg-[#c8f33b]" />
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-lime-700 dark:text-[#c8f33b]">
+              Catalog Inventory & Product Editor
             </span>
           </div>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl font-sans">
-            {product.name}
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-zinc-900 dark:text-white sm:text-3xl font-sans">
+            Edit: {product.name}
           </h1>
-          <p className="mt-1 font-mono text-xs text-zinc-400">
-            SKU: <span className="text-white font-bold">{product.sku}</span> • Status:{" "}
-            <span className="uppercase text-emerald-400">{product.status}</span>
+          <p className="mt-1 font-mono text-xs text-zinc-500 dark:text-zinc-400">
+            Brand: <span className="text-zinc-900 dark:text-white font-bold">{product.brand || "DJI"}</span> • SKU:{" "}
+            <span className="text-zinc-900 dark:text-white font-bold">{product.sku}</span> • Current Status:{" "}
+            <span className="uppercase text-emerald-600 dark:text-emerald-400 font-bold">{product.status}</span>
           </p>
         </div>
 
-        <Link
-          href="/admin/products"
-          className="flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-700 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Back to Catalog</span>
-        </Link>
-      </div>
+        <div className="flex items-center gap-2.5">
+          <Link
+            href={`/product/${product.slug}`}
+            target="_blank"
+            className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-black dark:hover:text-white transition-colors shadow-xs"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            <span>Storefront PDP</span>
+          </Link>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-5">
-          <span className="text-xs font-mono text-zinc-400 uppercase">Base Price</span>
-          <p className="text-xl font-bold font-mono text-white mt-1">
-            {formatINR(product.basePricePaise)}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-5">
-          <span className="text-xs font-mono text-zinc-400 uppercase">Stock Inventory</span>
-          <p className="text-xl font-bold font-mono text-white mt-1">
-            {product.stockQuantity} units
-          </p>
-        </div>
-        <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-5">
-          <span className="text-xs font-mono text-zinc-400 uppercase">Category</span>
-          <p className="text-xl font-bold text-white mt-1">
-            {product.category?.name || "General"}
-          </p>
+          <Link
+            href="/admin/products"
+            className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-black dark:hover:text-white transition-colors shadow-xs"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to Products</span>
+          </Link>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-6 space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono">
-          Overview & Description
-        </h3>
-        <p className="text-xs leading-relaxed text-zinc-300">
-          {product.description || "No description logged for this component."}
-        </p>
-      </div>
-
-      <div className="flex items-center justify-between pt-4">
-        <Link
-          href={`/product/${product.slug}`}
-          target="_blank"
-          className="inline-flex items-center gap-2 rounded-xl bg-[#c8f33b] px-5 py-2.5 text-xs font-bold text-black transition-all hover:bg-[#b5e028] shadow-xs"
-        >
-          <span>View on Live Storefront ↗</span>
-        </Link>
-      </div>
+      {/* Interactive Edit Form */}
+      <EditProductForm initialProduct={product} />
     </div>
   );
 }

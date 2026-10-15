@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   BatteryCharging,
   ChevronDown,
@@ -18,6 +19,7 @@ import { env } from "@/lib/env";
 import { formatINR } from "@/lib/utils";
 import { resolveImageUrl } from "@/lib/media";
 import { isValidProductId, useCartStore } from "@/stores/cart-store";
+import { checkAddToCartAllowed } from "@/lib/auth-client";
 
 export interface UsedDroneProps {
   product: {
@@ -40,6 +42,7 @@ export interface UsedDroneProps {
 }
 
 export function UsedDroneCard({ product }: UsedDroneProps) {
+  const router = useRouter();
   const { addItem, items } = useCartStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -57,9 +60,21 @@ export function UsedDroneCard({ product }: UsedDroneProps) {
   const isAvailable =
     product.stockQuantity > 0 && isValidProductId(product.id);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!isAvailable) return;
+
+    const guard = await checkAddToCartAllowed();
+    if (!guard.allowed) {
+      if (guard.reason === "unauthenticated") {
+        router.push(guard.loginUrl);
+        return;
+      }
+      if (guard.reason === "admin") {
+        alert(guard.message);
+        return;
+      }
+    }
 
     addItem({
       productId: product.id,

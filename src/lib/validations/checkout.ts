@@ -26,16 +26,29 @@ export const shippingAddressSchema = z.object({
     .regex(indianPincodeRegex, "Please enter a valid 6-digit Indian PIN code"),
 });
 
+export const insuranceDetailsSchema = z
+  .object({
+    opted: z.boolean().default(false),
+    fullName: z.string().trim().optional(),
+    phone: z.string().trim().optional(),
+    email: z.string().trim().optional(),
+    dronePurpose: z.string().trim().optional(),
+    nomineeName: z.string().trim().optional(),
+  })
+  .optional();
+
 export const initiateCheckoutSchema = z.object({
   items: z
     .array(
       z.object({
         productId: z.string().uuid("Invalid product ID"),
         quantity: z.number().int().positive("Quantity must be at least 1"),
+        hasInsurance: z.boolean().optional(),
       })
     )
     .min(1, "Your cart is empty"),
   shippingAddress: shippingAddressSchema,
+  insuranceDetails: insuranceDetailsSchema,
 });
 
 export const submitPaymentProofSchema = z.object({
@@ -51,5 +64,6 @@ export const submitPaymentProofSchema = z.object({
 });
 
 export type ShippingAddressInput = z.infer<typeof shippingAddressSchema>;
+export type InsuranceDetailsInput = z.infer<typeof insuranceDetailsSchema>;
 export type InitiateCheckoutInput = z.infer<typeof initiateCheckoutSchema>;
 export type SubmitPaymentProofInput = z.infer<typeof submitPaymentProofSchema>;

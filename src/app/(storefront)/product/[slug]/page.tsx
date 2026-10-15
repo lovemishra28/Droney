@@ -2,26 +2,18 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, ShieldCheck, Truck, Zap, CheckCircle2 } from "lucide-react";
-import { getProductBySlug, getRelatedProducts } from "@/server/queries/catalog";
+import { ChevronRight, ShieldCheck, Truck, Zap } from "lucide-react";
+import { getProductBySlug } from "@/server/queries/catalog";
 import {
   MediaGallery,
   type MediaAssetItem,
 } from "@/components/storefront/media-gallery";
-import { ProductCard } from "@/components/storefront/product-card";
 import { StickyPurchaseBar } from "@/components/storefront/sticky-purchase-bar";
 import { ProductPurchaseActions } from "@/components/storefront/product-purchase-actions";
-import { ProductBundleBuilder } from "@/components/storefront/product-bundle-builder";
 import { ShowcaseHeroBanner } from "@/components/storefront/showcase-hero-banner";
-import { ShowcaseBentoFeatures } from "@/components/storefront/showcase-bento-features";
-import { ShowcaseMultiAngle } from "@/components/storefront/showcase-multi-angle";
-import { ShowcaseComparison } from "@/components/storefront/showcase-comparison";
 import { ShowcaseInTheBox } from "@/components/storefront/showcase-in-the-box";
 import { ShowcaseTechSpecs } from "@/components/storefront/showcase-tech-specs";
-import { ShowcaseRegulatoryFaqs } from "@/components/storefront/showcase-regulatory-faqs";
-import { ShowcaseCarePlans } from "@/components/storefront/showcase-care-plans";
 import { ShowcaseSeoArticle } from "@/components/storefront/showcase-seo-article";
-import { formatINR } from "@/lib/utils";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -72,17 +64,9 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { slug } = await params;
 
   let product: any = null;
-  let relatedProducts: any[] = [];
 
   try {
     product = await getProductBySlug(slug);
-    if (product) {
-      relatedProducts = await getRelatedProducts(
-        product.categoryId,
-        product.id,
-        3
-      );
-    }
   } catch (error) {
     console.warn("[PDP Server Query Notice]:", error);
   }
@@ -154,6 +138,9 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                   productName={product.name}
                   media={formattedMedia}
                   isSecondHand={product.isSecondHand}
+                  productId={product.id}
+                  productSlug={product.slug}
+                  basePricePaise={product.basePricePaise}
                 />
               </div>
             </div>
@@ -182,7 +169,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                   {product.name}
                 </h1>
 
-                {/* Real-time Stock Indicator */}
+                {/* Real-time Stock Indicator (No unit counts) */}
                 <div className="flex items-center gap-2 text-xs font-semibold pt-1">
                   <span
                     className={`h-2.5 w-2.5 rounded-full ${
@@ -192,9 +179,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                   <span
                     className={isAvailable ? "text-emerald-700" : "text-rose-600"}
                   >
-                    {isAvailable
-                      ? `In Stock (${product.stockQuantity} unit${product.stockQuantity > 1 ? "s" : ""} ready for express dispatch)`
-                      : "Currently Out of Stock"}
+                    {isAvailable ? "In Stock" : "Currently Out of Stock"}
                   </span>
                 </div>
               </div>
@@ -236,116 +221,77 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                   isSecondHand: product.isSecondHand,
                   thumbnailUrl: primaryImage,
                   mrpPricePaise: showcase?.mrpPricePaise,
-                  emiStartsFromPaise: showcase?.emiStartsFromPaise,
                 }}
               />
 
             </div>
           </div>
 
-          {/* Frequently Bought Together Bundle Builder */}
-          <ProductBundleBuilder
-            primaryProduct={{
-              id: product.id,
-              name: product.name,
-              slug: product.slug,
-              basePricePaise: product.basePricePaise,
-              thumbnailUrl: primaryImage,
-            }}
-          />
-
         </div>
       </section>
 
       {/* ==================================================================== */}
-      {/* PART 2: CINEMATIC DARK SHOWCASE (APPLE / DJI VISUAL STORYTELLING)   */}
+      {/* PART 2: HARDWARE SHOWCASE & TECHNICAL TELEMETRY                     */}
       {/* ==================================================================== */}
       <div className="bg-[#050505] text-white">
         
-        {/* 1. Dark Hero Banner with 4 Big Stat Metrics */}
-        <ShowcaseHeroBanner
-          badge={showcase?.heroBadge || "REAL DETAIL AIR"}
-          headline={showcase?.heroHeadline || `${product.name}.`}
-          subtitle={
-            showcase?.heroSubtitle ||
-            "Dual-camera 1-inch CMOS primary sensor, 4K/60fps HDR video, and next-gen nightscape omnidirectional obstacle sensing."
-          }
-          explodedLayoutUrl={showcase?.heroExplodedLayoutUrl || primaryImage}
-          metrics={showcase?.keyMetrics || []}
+        {/* 1. Dark Hero Banner with 4 Database-Driven Stat Metrics */}
+        {(() => {
+          const specs = product.specifications;
+          const heroMetrics = [
+            {
+              value: specs?.fcFirmware || "DJI FlightOS",
+              unit: "",
+              label: "Flight OS",
+            },
+            {
+              value: specs?.flightTimeMinutes ? `${specs.flightTimeMinutes}` : "45",
+              unit: "Mins",
+              label: "Flight Time",
+            },
+            {
+              value: specs?.payloadCapacityGrams ? `${specs.payloadCapacityGrams}` : "500",
+              unit: "Grams",
+              label: "Payload Weight",
+            },
+            {
+              value: specs?.escProtocol || "O4 HD",
+              unit: "FHD 20km",
+              label: "Transmission",
+            },
+          ];
+
+          return (
+            <ShowcaseHeroBanner
+              badge={showcase?.heroBadge || "OFFICIAL HARDWARE REGISTRY"}
+              headline={showcase?.heroHeadline || `${product.name}.`}
+              subtitle={
+                showcase?.heroSubtitle ||
+                product.description ||
+                "Dual-camera optical payload, precision avionics, and intelligent obstacle sensing."
+              }
+              explodedLayoutUrl={primaryImage}
+              metrics={heroMetrics}
+            />
+          );
+        })()}
+
+        {/* 2. "In the Box" Components Table */}
+        <ShowcaseInTheBox
+          items={showcase?.inTheBox || product.secondHandDetails?.includedAccessories}
+          productName={product.name}
         />
 
-        {/* 2. Bento Feature Storytelling Blocks */}
-        <ShowcaseBentoFeatures blocks={showcase?.storyBlocks || []} />
-
-        {/* 3. "Every angle." Multi-View Interactive Gallery */}
-        <ShowcaseMultiAngle angles={showcase?.multiAngles || []} />
-
-        {/* 4. Side-by-Side Model Comparison ("Air 3S vs Mavic 3 Pro") */}
-        <ShowcaseComparison
-          currentModelName={product.name}
-          currentModelImage={primaryImage}
-          comparison={showcase?.comparisonData}
+        {/* 3. Comprehensive Technical Specifications Single Table */}
+        <ShowcaseTechSpecs
+          specifications={product.specifications}
+          productName={product.name}
         />
 
-        {/* 5. "In the Box" Components Grid */}
-        <ShowcaseInTheBox items={showcase?.inTheBox || []} />
-
-        {/* 6. Comprehensive Technical Specifications Accordion */}
-        <ShowcaseTechSpecs groupedSpecs={showcase?.techSpecsGrouped} />
-
-        {/* 7. "Need to know." Aviation/DGCA Compliance Accordions */}
-        <ShowcaseRegulatoryFaqs faqs={showcase?.regulatoryFaqs || []} />
-
-        {/* 8. Pilot Protection & Care Plans */}
-        <ShowcaseCarePlans />
-
-        {/* 9. Cross-Fleet Compatible Hardware & Accessories */}
-        {relatedProducts.length > 0 && (
-          <section className="w-full bg-black text-white py-24 border-t border-zinc-900">
-            <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8">
-              <div className="flex items-baseline justify-between mb-12">
-                <div>
-                  <span className="text-[10px] font-mono font-bold tracking-widest text-[#c8f33b] uppercase">
-                    CROSS-FLEET COMPATIBILITY
-                  </span>
-                  <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mt-1">
-                    Compatible Gear & Spares
-                  </h2>
-                </div>
-                <Link
-                  href="/catalog"
-                  className="text-xs font-bold text-[#c8f33b] hover:underline"
-                >
-                  View all hardware →
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {relatedProducts.map((item) => (
-                  <ProductCard
-                    key={item.id}
-                    product={{
-                      id: item.id,
-                      slug: item.slug,
-                      name: item.name,
-                      sku: item.sku,
-                      basePricePaise: item.basePricePaise,
-                      stockQuantity: item.stockQuantity,
-                      isSecondHand: item.isSecondHand,
-                      media: item.media,
-                      secondHandDetails: item.secondHandDetails,
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 10. Long-Form Editorial Review Article for SEO */}
+        {/* 4. Technical Summary Article from Database */}
         <ShowcaseSeoArticle
           productName={product.name}
-          articleText={showcase?.longFormSeoArticle}
+          articleText={showcase?.longFormSeoArticle || product.description}
         />
 
       </div>

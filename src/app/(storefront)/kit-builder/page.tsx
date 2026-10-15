@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Cpu, 
   BatteryCharging, 
@@ -16,6 +17,7 @@ import {
   Plane
 } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
+import { checkAddToCartAllowed } from "@/lib/auth-client";
 
 interface ComponentOption {
   id: string;
@@ -51,6 +53,7 @@ const VTX_SYSTEMS: ComponentOption[] = [
 ];
 
 export default function KitBuilderPage() {
+  const router = useRouter();
   const [selectedFrame, setSelectedFrame] = useState<ComponentOption>(FRAMES[0]);
   const [selectedMotors, setSelectedMotors] = useState<ComponentOption>(MOTORS[0]);
   const [selectedStack, setSelectedStack] = useState<ComponentOption>(STACKS[0]);
@@ -74,7 +77,19 @@ export default function KitBuilderPage() {
 
   const totalPriceInr = (totalPricePaise / 100).toLocaleString("en-IN");
 
-  function handleAddCustomBuildToCart() {
+  async function handleAddCustomBuildToCart() {
+    const guard = await checkAddToCartAllowed();
+    if (!guard.allowed) {
+      if (guard.reason === "unauthenticated") {
+        router.push(guard.loginUrl);
+        return;
+      }
+      if (guard.reason === "admin") {
+        alert(guard.message);
+        return;
+      }
+    }
+
     addItem({
       productId: "00000000-0000-0000-0000-000000000001",
       name: `Altitude Custom Drone (${selectedFrame.name.split(" ")[0]} 6S)`,

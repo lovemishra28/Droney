@@ -35,11 +35,11 @@ export function ShowcaseSeoArticle({
         
         {/* Header */}
         <div className="border-b border-zinc-800 pb-4 mb-6">
-          <span className="font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            TECHNICAL EDITORIAL REVIEW
+          <span className="font-mono text-[10px] font-bold text-[#c8f33b] uppercase tracking-widest">
+            TECHNICAL SUMMARY
           </span>
           <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
-            {productName}: In-Depth Flight Dynamics & Technical Overview
+            {productName}: Technical Summary & Avionics Overview
           </h2>
         </div>
 

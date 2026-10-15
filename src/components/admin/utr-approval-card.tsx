@@ -49,24 +49,24 @@ export function UtrApprovalCard({
 
   if (status !== "pending") {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 text-xs text-zinc-400">
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 p-4 text-xs text-zinc-600 dark:text-zinc-400 shadow-xs">
         Order {orderReference} has been marked as <strong>{status}</strong>.
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 sm:flex-row sm:items-center sm:justify-between shadow-xs">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-zinc-100">{orderReference}</span>
-          <span className="rounded border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-400">
+          <span className="font-bold text-zinc-900 dark:text-zinc-100">{orderReference}</span>
+          <span className="rounded border border-amber-300 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
             {formatINR(amountPaise)}
           </span>
         </div>
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">
           Claimed Bank UTR:{" "}
-          <strong className="font-mono text-zinc-200">{utrNumber}</strong>
+          <strong className="font-mono text-zinc-900 dark:text-zinc-200">{utrNumber}</strong>
         </p>
       </div>
 

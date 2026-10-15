@@ -63,18 +63,18 @@ export default async function AdminOrdersPage() {
   return (
     <div className="space-y-6">
       {/* Workspace Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800/80 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-[#c8f33b]" />
-            <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#c8f33b]">
+            <span className="flex h-2 w-2 rounded-full bg-lime-500 dark:bg-[#c8f33b]" />
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-lime-700 dark:text-[#c8f33b]">
               Fulfillment State Machine
             </span>
           </div>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl font-sans">
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-zinc-900 dark:text-white sm:text-3xl font-sans">
             Order Fulfillment & Courier Dispatch
           </h1>
-          <p className="mt-1 text-xs text-zinc-400">
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
             Link Air Waybill (AWB) tracking codes, manage courier logistics (Delhivery, Blue Dart), and generate GST tax invoices.
           </p>
         </div>

@@ -8,6 +8,7 @@ import {
   ArrowUpDown,
   Check,
   ExternalLink,
+  Pencil,
   Search,
   Video,
 } from "lucide-react";
@@ -31,6 +32,7 @@ export interface AdminProductRow {
   id: string;
   sku: string;
   name: string;
+  brand?: string;
   slug: string;
   categoryName: string;
   basePricePaise: number;
@@ -110,7 +112,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
           const item = row.original;
           return (
             <div className="flex items-center gap-3">
-              <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+              <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950">
                 <Image
                   src={item.thumbnailUrl || "/placeholders/drone-placeholder.svg"}
                   alt={item.name}
@@ -119,21 +121,21 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                 />
               </div>
               <div>
-                <span className="font-mono text-xs font-bold text-white">
+                <span className="font-mono text-xs font-bold text-zinc-900 dark:text-white">
                   {item.sku}
                 </span>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {item.hasVideo && (
                     <span title="Bunny HLS Video Linked">
-                      <Video className="h-3 w-3 text-[#c8f33b]" />
+                      <Video className="h-3 w-3 text-lime-700 dark:text-[#c8f33b]" />
                     </span>
                   )}
                   {item.isSecondHand ? (
-                    <span className="rounded border border-emerald-500/30 bg-emerald-950/60 px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase text-emerald-400">
+                    <span className="rounded border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase text-emerald-700 dark:text-emerald-400">
                       Grade {item.cosmeticGrade || "A"}
                     </span>
                   ) : (
-                    <span className="rounded bg-zinc-800 px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase text-zinc-300">
+                    <span className="rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase text-zinc-700 dark:text-zinc-300">
                       New
                     </span>
                   )}
@@ -153,15 +155,21 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
               <Link
                 href={`/product/${item.slug}`}
                 target="_blank"
-                className="group flex items-center gap-1 font-semibold text-zinc-100 hover:text-[#c8f33b] transition-colors"
+                className="group flex items-center gap-1 font-semibold text-zinc-900 dark:text-zinc-100 hover:text-lime-700 dark:hover:text-[#c8f33b] transition-colors"
                 title="View live storefront product page"
               >
                 <span className="truncate">{item.name}</span>
-                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#c8f33b] shrink-0" />
+                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-lime-700 dark:text-[#c8f33b] shrink-0" />
               </Link>
-              <span className="block text-[11px] font-mono text-zinc-500 mt-0.5">
-                {item.categoryName}
-              </span>
+              <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-500 mt-0.5">
+                {item.brand && (
+                  <span className="text-lime-700 dark:text-[#c8f33b] font-bold tracking-wider uppercase">
+                    {item.brand}
+                  </span>
+                )}
+                {item.brand && <span>•</span>}
+                <span>{item.categoryName}</span>
+              </div>
             </div>
           );
         },
@@ -172,14 +180,14 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
           <button
             type="button"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 font-mono uppercase text-zinc-400 hover:text-white"
+            className="flex items-center gap-1 font-mono uppercase text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
           >
             <span>Base Price</span>
             <ArrowUpDown className="h-3 w-3" />
           </button>
         ),
         cell: ({ row }) => (
-          <span className="font-mono font-bold text-white text-sm">
+          <span className="font-mono font-bold text-zinc-900 dark:text-white text-sm">
             {formatINR(row.original.basePricePaise)}
           </span>
         ),
@@ -190,7 +198,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
           <button
             type="button"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 font-mono uppercase text-zinc-400 hover:text-white"
+            className="flex items-center gap-1 font-mono uppercase text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
           >
             <span>Inventory Stock</span>
             <ArrowUpDown className="h-3 w-3" />
@@ -208,14 +216,14 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                   min={0}
                   value={stockInput}
                   onChange={(e) => setStockInput(parseInt(e.target.value, 10) || 0)}
-                  className="w-18 rounded-lg border border-[#c8f33b]/60 bg-zinc-950 px-2 py-1 font-mono text-xs text-white focus:outline-none"
+                  className="w-18 rounded-lg border border-zinc-300 dark:border-[#c8f33b]/60 bg-white dark:bg-zinc-950 px-2 py-1 font-mono text-xs text-zinc-900 dark:text-white focus:outline-none"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={() => handleStockSave(item.id)}
                   disabled={isPending}
-                  className="rounded-lg bg-[#c8f33b] p-1.5 text-black hover:bg-[#b5e028] transition-colors"
+                  className="rounded-lg bg-lime-500 dark:bg-[#c8f33b] p-1.5 text-black hover:bg-lime-400 dark:hover:bg-[#b5e028] transition-colors"
                 >
                   <Check className="h-3.5 w-3.5 stroke-[3]" />
                 </button>
@@ -231,12 +239,12 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                   setEditingStockId(item.id);
                   setStockInput(item.stockQuantity);
                 }}
-                className={`font-mono text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
+                className={`font-mono text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors shadow-xs ${
                   item.stockQuantity === 0
-                    ? "border-rose-500/40 bg-rose-950/60 text-rose-300"
+                    ? "border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300"
                     : isLowStock
-                    ? "border-amber-500/40 bg-amber-950/60 text-amber-300"
-                    : "border-zinc-800 bg-zinc-950 text-zinc-200 hover:border-zinc-700 hover:text-white"
+                    ? "border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300"
+                    : "border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-700 hover:text-black dark:hover:text-white"
                 }`}
                 title="Click to inline edit stock level"
               >
@@ -244,7 +252,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
               </button>
               {isLowStock && (
                 <span title="Low stock threshold alert (≤3 units)">
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
                 </span>
               )}
             </div>
@@ -266,18 +274,41 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                   e.target.value as "active" | "draft" | "archived"
                 )
               }
-              className={`rounded-xl border px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider focus:outline-none transition-colors ${
+              className={`rounded-xl border px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider focus:outline-none transition-colors shadow-xs ${
                 item.status === "active"
-                  ? "border-emerald-500/40 bg-emerald-950/60 text-emerald-300"
+                  ? "border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
                   : item.status === "draft"
-                  ? "border-amber-500/40 bg-amber-950/60 text-amber-300"
-                  : "border-zinc-800 bg-zinc-900 text-zinc-500"
+                  ? "border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300"
+                  : "border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-500"
               }`}
             >
               <option value="active">Active</option>
               <option value="draft">Draft</option>
               <option value="archived">Archived</option>
             </select>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: () => (
+          <span className="font-mono uppercase text-zinc-500 dark:text-zinc-400">
+            Actions
+          </span>
+        ),
+        cell: ({ row }) => {
+          const item = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/admin/products/${item.id}`}
+                className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:border-lime-500 dark:hover:border-[#c8f33b] hover:text-black dark:hover:text-[#c8f33b] transition-colors shadow-xs"
+                title="Edit Product, Images & Specifications"
+              >
+                <Pencil className="h-3.5 w-3.5 text-lime-600 dark:text-[#c8f33b]" />
+                <span>Edit</span>
+              </Link>
+            </div>
           );
         },
       },
@@ -316,20 +347,20 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
       {/* Top Search & Actions Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="relative min-w-[280px] flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
           <input
             type="text"
             value={globalFilter ?? ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder="Search SKU, drone title, category..."
-            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 py-2.5 pl-10 pr-4 text-xs text-white placeholder-zinc-500 focus:border-[#c8f33b]/60 focus:outline-none transition-colors"
+            placeholder="Search SKU, drone title, category, brand..."
+            className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 py-2.5 pl-10 pr-4 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:border-black dark:focus:border-[#c8f33b]/60 focus:outline-none transition-colors shadow-xs"
           />
         </div>
 
         <div className="flex items-center gap-2">
           <Link
             href="/admin/import"
-            className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:border-zinc-700 hover:text-white transition-colors"
+            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-black dark:hover:text-white transition-colors shadow-xs"
           >
             Bulk CSV Ingest
           </Link>
@@ -337,10 +368,10 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
       </div>
 
       {/* Main Table Panel */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/40">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 shadow-xs transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 bg-zinc-950/70 font-mono text-[11px] text-zinc-400 uppercase">
+            <thead className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/70 font-mono text-[11px] text-zinc-500 dark:text-zinc-400 uppercase">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
@@ -356,16 +387,16 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-200">
+            <tbody className="divide-y divide-zinc-200/80 dark:divide-zinc-800/60 text-zinc-800 dark:text-zinc-200">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-5 py-10 text-center text-zinc-500 font-mono">
+                  <td colSpan={columns.length} className="px-5 py-10 text-center text-zinc-400 font-mono">
                     No matching products found in catalog.
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-zinc-900/60 transition-colors">
+                  <tr key={row.id} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/60 transition-colors">
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-5 py-4">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -379,7 +410,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
         </div>
 
         {/* Pagination Bar */}
-        <div className="flex items-center justify-between border-t border-zinc-800/80 px-5 py-3.5 text-xs text-zinc-400">
+        <div className="flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800/80 px-5 py-3.5 text-xs text-zinc-500 dark:text-zinc-400">
           <span className="font-mono">
             Showing {table.getRowModel().rows.length} of {data.length} total SKUs
           </span>
@@ -389,11 +420,11 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
               type="button"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-zinc-300 hover:border-zinc-700 disabled:opacity-40 transition-colors"
+              className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1.5 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 disabled:opacity-40 transition-colors cursor-pointer"
             >
               Previous
             </button>
-            <span className="font-mono text-zinc-300">
+            <span className="font-mono text-zinc-700 dark:text-zinc-300">
               Page {table.getState().pagination.pageIndex + 1} of{" "}
               {table.getPageCount() || 1}
             </span>
@@ -401,7 +432,7 @@ export function ProductsDataTable({ initialProducts }: ProductsDataTableProps) {
               type="button"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-zinc-300 hover:border-zinc-700 disabled:opacity-40 transition-colors"
+              className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1.5 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 disabled:opacity-40 transition-colors cursor-pointer"
             >
               Next
             </button>

@@ -21,6 +21,10 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     typeof resolvedParams.category === "string"
       ? resolvedParams.category
       : undefined;
+  const brand =
+    typeof resolvedParams.brand === "string"
+      ? resolvedParams.brand
+      : undefined;
   const condition =
     typeof resolvedParams.condition === "string"
       ? resolvedParams.condition
@@ -66,6 +70,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         page,
         pageSize: 20,
         categorySlug,
+        brand,
         search,
         isSecondHand:
           condition === "used" ? true : condition === "new" ? false : undefined,
@@ -86,112 +91,41 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     pagination = catalogResult.pagination;
   } catch (error) {
     console.warn("[Catalog Server Query Notice]:", error);
-    // Development fallback mock items if database connection is pending
-    products = [
-      {
-        id: "prod-1",
-        slug: "apex-5-inch-freestyle-drone",
-        name: 'ImpulseRC Apex 5" 6S Freestyle Drone (BNF / ELRS)',
-        sku: "DRN-APX5-6S",
-        basePricePaise: 2899900,
-        stockQuantity: 4,
-        isSecondHand: false,
-        category: { name: "BNF Drones", slug: "bnf-drones" },
-        media: [
-          {
-            url: "/placeholders/drone-placeholder.svg",
-            mediaType: "image" as const,
-          },
-        ],
-      },
-      {
-        id: "prod-2",
-        slug: "t-motor-f60-pro-v-1950kv",
-        name: "T-Motor F60 PRO V 1950KV Brushless Motor",
-        sku: "MTR-TM-F60V",
-        basePricePaise: 235000,
-        stockQuantity: 28,
-        isSecondHand: false,
-        category: { name: "Motors", slug: "motors" },
-        media: [
-          {
-            url: "/placeholders/drone-placeholder.svg",
-            mediaType: "image" as const,
-          },
-        ],
-      },
-      {
-        id: "prod-3",
-        slug: "cinelog35-v2-pre-owned",
-        name: "GEPRC CineLog35 V2 HD O3 (Grade A Certified Pre-Owned)",
-        sku: "USED-GEP-CL35",
-        basePricePaise: 3499900,
-        stockQuantity: 1,
-        isSecondHand: true,
-        category: { name: "Cinelifters", slug: "cinelifters" },
-        secondHandDetails: { cosmeticGrade: "A" },
-        media: [
-          {
-            url: "/placeholders/drone-placeholder.svg",
-            mediaType: "image" as const,
-          },
-        ],
-      },
-      {
-        id: "prod-4",
-        slug: "speedybee-f405-v4-stack",
-        name: "SpeedyBee F405 V4 55A BLS 30x30 Flight Controller & ESC Stack",
-        sku: "STK-SB-F405V4",
-        basePricePaise: 685000,
-        stockQuantity: 15,
-        isSecondHand: false,
-        category: { name: "Flight Controllers", slug: "flight-controllers" },
-        media: [
-          {
-            url: "/placeholders/drone-placeholder.svg",
-            mediaType: "image" as const,
-          },
-        ],
-      },
-    ];
-    pagination.totalCount = products.length;
+    products = [];
+    pagination.totalCount = 0;
   }
 
-  let catalogTitle = "Hardware Fleet & Flight Spares";
-  let catalogSubtitle = `Showing ${pagination.totalCount} products across certified drone frames, ESCs, motors, and camera gear.`;
+  let catalogTitle = "Altitude Drone Fleet & Hardware";
+  let catalogSubtitle = `Showing ${pagination.totalCount} products across certified drone platforms, flight batteries, remotes, and accessories.`;
   let categoryLabel = "";
 
   if (categorySlug === "drones") {
-    catalogTitle = "Flight Fleet & Drones";
-    catalogSubtitle = `Showing ${pagination.totalCount} certified camera platforms, FPV racers, and aerial fleet drones.`;
+    catalogTitle = "DJI Flight Fleet";
+    catalogSubtitle = `Showing ${pagination.totalCount} certified camera quadcopters, travel drones, and flagship cinema platforms.`;
     categoryLabel = "Drones";
+  } else if (categorySlug === "mini-series") {
+    catalogTitle = "Mini Series (<249g)";
+    catalogSubtitle = `Showing ${pagination.totalCount} ultralight sub-249g drones. DGCA India nano-category compliant with no license required.`;
+    categoryLabel = "Mini Series (<249g)";
+  } else if (categorySlug === "air-series") {
+    catalogTitle = "Air Series Drones";
+    catalogSubtitle = `Showing ${pagination.totalCount} dual-camera systems, 1-inch CMOS optics, and 45-minute flight endurance drones.`;
+    categoryLabel = "Air Series";
+  } else if (categorySlug === "mavic-series") {
+    catalogTitle = "Mavic Flagship Cinema Drones";
+    catalogSubtitle = `Showing ${pagination.totalCount} triple-camera Hasselblad platforms with Apple ProRes broadcast video workflows.`;
+    categoryLabel = "Mavic Series";
+  } else if (categorySlug === "avata-series") {
+    catalogTitle = "Avata & Cinematic FPV Series";
+    catalogSubtitle = `Showing ${pagination.totalCount} immersive motion flight quadcopters with built-in propeller guards.`;
+    categoryLabel = "Avata & FPV";
   } else if (categorySlug === "accessories") {
-    catalogTitle = "Aviation Accessories & Cinema Glass";
-    catalogSubtitle = `Showing ${pagination.totalCount} essential flight batteries, ND filters, rugged cases, and remote controllers.`;
+    catalogTitle = "Official DJI Accessories & Spares";
+    catalogSubtitle = `Showing ${pagination.totalCount} genuine intelligent flight batteries, RC 2 screen controllers, chargers, and optical ND glass.`;
     categoryLabel = "Accessories";
-  } else if (categorySlug === "camera-drones") {
-    catalogTitle = "Flight Fleet & Camera Drones";
-    catalogSubtitle = `Showing ${pagination.totalCount} aerial cinematography platforms, 4K/60fps quadcopters, and dual-sensor drones.`;
-    categoryLabel = "Camera Drones";
-  } else if (categorySlug === "fpv-drones") {
-    catalogTitle = "FPV & Acro Racing Drones";
-    catalogSubtitle = `Showing ${pagination.totalCount} tuned acrobatic platforms and BNF quadcopters.`;
-    categoryLabel = "FPV Drones";
-  } else if (categorySlug === "mini-drone") {
-    catalogTitle = "Mini & Lightweight Drones";
-    catalogSubtitle = `Showing ${pagination.totalCount} ultra-compact, portable, and beginner-friendly aerial drones.`;
-    categoryLabel = "Mini Drone";
-  } else if (categorySlug === "professional-drone") {
-    catalogTitle = "Professional & Cinema Drones";
-    catalogSubtitle = `Showing ${pagination.totalCount} enterprise-grade, high-end cinema, and heavy-lift aerial platforms.`;
-    categoryLabel = "Professional Drone";
-  } else if (categorySlug === "motors") {
-    catalogTitle = "Motors, ESCs & Power Electronics";
-    catalogSubtitle = `Showing ${pagination.totalCount} high-efficiency brushless motors, titanium stacks, and ESC controllers.`;
-    categoryLabel = "Motors & ESCs";
   } else if (categorySlug === "used-drones") {
     catalogTitle = "Pre-Owned Certified Fleet";
-    catalogSubtitle = `Showing ${pagination.totalCount} inspected and flight-tested drones with warranty.`;
+    catalogSubtitle = `Showing ${pagination.totalCount} technician-verified bench-tested drones with 32-point inspection warranty.`;
     categoryLabel = "Pre-Owned Drones";
   }
 

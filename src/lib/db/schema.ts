@@ -85,6 +85,24 @@ export const users = pgTable(
 // 3. CATALOG TAXONOMY & HARDWARE PRODUCTS
 // ============================================================================
 
+export const brands = pgTable(
+  "brands",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: varchar("name", { length: 120 }).notNull(),
+    slug: varchar("slug", { length: 140 }).notNull().unique(),
+    description: text("description"),
+    logoUrl: text("logo_url"),
+    websiteUrl: varchar("website_url", { length: 255 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_brands_slug").on(table.slug),
+  ]
+);
+
 export const categories = pgTable(
   "categories",
   {
@@ -110,6 +128,10 @@ export const products = pgTable(
     categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",
     }),
+    brandId: uuid("brand_id").references(() => brands.id, {
+      onDelete: "set null",
+    }),
+    brand: varchar("brand", { length: 100 }).default("DJI").notNull(),
     slug: varchar("slug", { length: 255 }).notNull().unique(),
     sku: varchar("sku", { length: 64 }).notNull().unique(),
     name: varchar("name", { length: 255 }).notNull(),
@@ -129,6 +151,8 @@ export const products = pgTable(
   (table) => [
     index("idx_products_slug").on(table.slug),
     index("idx_products_sku").on(table.sku),
+    index("idx_products_brand").on(table.brand),
+    index("idx_products_brand_id").on(table.brandId),
     index("idx_products_category_status").on(table.categoryId, table.status),
     index("idx_products_price").on(table.basePricePaise),
     index("idx_products_second_hand").on(table.isSecondHand, table.status),
@@ -145,10 +169,10 @@ export const droneSpecifications = pgTable("drone_specifications", {
     .references(() => products.id, { onDelete: "cascade" }),
   frameSizeMm: integer("frame_size_mm"),
   weightGrams: integer("weight_grams"),
-  inputVoltageLipo: varchar("input_voltage_lipo", { length: 32 }), // e.g., "4S-6S LiPo"
-  motorKv: varchar("motor_kv", { length: 32 }), // e.g., "1750KV"
+  inputVoltageLipo: varchar("input_voltage_lipo", { length: 128 }), // e.g., "4S LiPo 4276mAh (14.6V)"
+  motorKv: varchar("motor_kv", { length: 128 }), // e.g., "1750KV" or "DJI High-Efficiency Brushless Motor"
   fcFirmware: varchar("fc_firmware", { length: 64 }), // e.g., "Betaflight 4.5"
-  escProtocol: varchar("esc_protocol", { length: 64 }), // e.g., "DShot600"
+  escProtocol: varchar("esc_protocol", { length: 128 }), // e.g., "DJI O4 20km 10-bit HDR" or "DShot600"
   flightTimeMinutes: integer("flight_time_minutes"),
   payloadCapacityGrams: integer("payload_capacity_grams"),
 });
@@ -206,7 +230,6 @@ export const productShowcases = pgTable("product_showcases", {
 
   // Pricing & Commercial Overlays
   mrpPricePaise: integer("mrp_price_paise"),
-  emiStartsFromPaise: integer("emi_starts_from_paise"),
   warrantyMonths: integer("warranty_months").default(12),
 
   // 1. Dark Hero Section
@@ -292,6 +315,14 @@ export interface ShippingAddressPayload {
   city: string;
   state: string;
   pincode: string;
+  insuranceDetails?: {
+    opted: boolean;
+    fullName?: string;
+    phone?: string;
+    email?: string;
+    dronePurpose?: string;
+    nomineeName?: string;
+  };
 }
 
 export const orders = pgTable(
@@ -428,6 +459,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   auditLogs: many(auditLogs),
 }));
 
+export const brandsRelations = relations(brands, ({ many }) => ({
+  products: many(products),
+}));
+
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
   parent: one(categories, {
     fields: [categories.parentId],
@@ -442,6 +477,10 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   category: one(categories, {
     fields: [products.categoryId],
     references: [categories.id],
+  }),
+  brandRel: one(brands, {
+    fields: [products.brandId],
+    references: [brands.id],
   }),
   specifications: one(droneSpecifications, {
     fields: [products.id],
@@ -547,6 +586,9 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
 
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
+
+export type Brand = InferSelectModel<typeof brands>;
+export type NewBrand = InferInsertModel<typeof brands>;
 
 export type Category = InferSelectModel<typeof categories>;
 export type NewCategory = InferInsertModel<typeof categories>;

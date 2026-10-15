@@ -75,6 +75,11 @@ const nextConfig: NextConfig = {
 
   images: {
     formats: ["image/avif", "image/webp"],
+    localPatterns: [
+      {
+        pathname: "/images/**",
+      },
+    ],
     remotePatterns: [
       {
         protocol: "https",
@@ -101,6 +106,36 @@ const nextConfig: NextConfig = {
         hostname: "localhost",
       },
     ],
+  },
+
+  async redirects() {
+    return [
+      {
+        source: "/products/:slug",
+        destination: "/product/:slug",
+        permanent: true,
+      },
+      {
+        source: "/product/dji-air-3s-fly-more-combo",
+        destination: "/product/dji-air-3s",
+        permanent: false,
+      },
+      {
+        source: "/product/dji-air-3s-combo",
+        destination: "/product/dji-air-3s",
+        permanent: false,
+      },
+      {
+        source: "/product/dji-mavic-3-pro-cine",
+        destination: "/product/dji-mavic-3-pro",
+        permanent: false,
+      },
+      {
+        source: "/product/dji-neo-palm-drone",
+        destination: "/product/dji-neo",
+        permanent: false,
+      },
+    ];
   },
 
   async headers() {
