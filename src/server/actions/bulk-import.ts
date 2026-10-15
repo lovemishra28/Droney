@@ -14,8 +14,9 @@ import {
 } from "@/lib/db/schema";
 import { requireAdminSession } from "@/server/queries/admin";
 import type { ActionResponse } from "@/server/actions/auth";
-import type { BulkSkuRow } from "@/lib/validations/catalog";
+import { bulkSkuRowSchema, type BulkSkuRow } from "@/lib/validations/catalog";
 import { invalidateCacheKeys } from "@/lib/cache";
+import { z } from "zod";
 
 const purge = revalidateTag as (tag: string, profile?: unknown) => void;
 
@@ -33,21 +34,32 @@ function generateSlug(name: string): string {
  * Ingests all core identity, brand, pricing, specs, pre-owned condition, and showcase details.
  */
 export async function bulkImportCatalogAction(
-  rows: BulkSkuRow[]
+  rawRows: BulkSkuRow[]
 ): Promise<ActionResponse<{ importedCount: number; updatedCount: number }>> {
   const session = await requireAdminSession();
 
-  if (!rows || rows.length === 0) {
+  if (!rawRows || !Array.isArray(rawRows) || rawRows.length === 0) {
     return { success: false, message: "No data rows provided for ingestion." };
   }
 
-  // Enforce batch cap per request to prevent execution timeouts on serverless runtimes
-  if (rows.length > 600) {
+  const parsedBatch = z
+    .array(bulkSkuRowSchema)
+    .max(600, "Exceeded batch limit. Please upload files with 600 or fewer rows per batch.")
+    .safeParse(rawRows);
+
+  if (!parsedBatch.success) {
+    const firstIssue = parsedBatch.error.issues[0];
+    const rowPrefix =
+      firstIssue.path.length > 0 && typeof firstIssue.path[0] === "number"
+        ? `Row ${firstIssue.path[0] + 1} (${firstIssue.path.slice(1).join(".")}): `
+        : "";
     return {
       success: false,
-      message: "Exceeded batch limit. Please upload files with 600 or fewer rows per batch.",
+      message: `Server validation error: ${rowPrefix}${firstIssue.message}`,
     };
   }
+
+  const rows = parsedBatch.data;
 
   try {
     let importedCount = 0;

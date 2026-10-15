@@ -41,10 +41,10 @@ const createProductSchema = z.object({
   flightTimeMinutes: z.number().int().positive().optional(),
   payloadCapacityGrams: z.number().int().positive().optional(),
   frameSizeMm: z.number().int().positive().optional(),
-  inputVoltageLipo: z.string().trim().max(32).optional(),
+  inputVoltageLipo: z.string().trim().max(128).optional(),
   motorKv: z.string().trim().max(128).optional(),
   fcFirmware: z.string().trim().max(64).optional(),
-  escProtocol: z.string().trim().max(64).optional(),
+  escProtocol: z.string().trim().max(128).optional(),
   // Pre-Owned Inspection Details
   cosmeticGrade: z.enum(["A", "B", "C"]).optional(),
   flightHours: z.number().int().min(0).optional(),
