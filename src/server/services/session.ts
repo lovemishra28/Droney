@@ -11,9 +11,13 @@ export interface SessionPayload {
 }
 
 export function getEncryptionKey(): Uint8Array {
-  const secret =
-    process.env.SESSION_SECRET || "default_local_dev_secret_key_32_chars!";
-  return new TextEncoder().encode(secret.padEnd(32, "!").slice(0, 32));
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "SESSION_SECRET environment variable is missing or less than 32 characters."
+    );
+  }
+  return new TextEncoder().encode(secret.slice(0, 32));
 }
 
 /**
@@ -109,19 +113,6 @@ export async function getCurrentSession(): Promise<SessionPayload | null> {
   }
 
   if (!token) return null;
-
-  // Staging / Test Load Testing Bypass fallback for synthetic k6 suites
-  if (
-    process.env.NODE_ENV !== "production" &&
-    (token === "YOUR_STAGING_SESSION_TOKEN" || token.startsWith("test-stress-"))
-  ) {
-    return {
-      sub: "00000000-0000-0000-0000-000000000001",
-      role: "customer",
-      fullName: "Stress Tester",
-      name: "Stress Tester",
-    };
-  }
 
   return await decryptSessionToken(token);
 }

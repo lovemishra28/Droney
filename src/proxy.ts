@@ -4,9 +4,13 @@ import { jwtDecrypt } from "jose";
 const SESSION_COOKIE_NAME = "aero_session";
 
 function getEncryptionKey(): Uint8Array {
-  const secret =
-    process.env.SESSION_SECRET || "default_local_dev_secret_key_32_chars!";
-  return new TextEncoder().encode(secret.padEnd(32, "!").slice(0, 32));
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "SESSION_SECRET environment variable is missing or less than 32 characters."
+    );
+  }
+  return new TextEncoder().encode(secret.slice(0, 32));
 }
 
 export async function proxy(request: NextRequest) {
