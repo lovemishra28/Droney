@@ -34,12 +34,29 @@ export interface ActionResponse<T = unknown> {
   data?: T;
 }
 
+function getClientIp(headerStore: { get(name: string): string | null }): string {
+  const cfIp = headerStore.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
+  const vercelIp = headerStore.get("x-vercel-forwarded-for")?.split(",")[0]?.trim();
+  if (vercelIp) return vercelIp;
+
+  const realIp = headerStore.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+
+  const forwarded = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (forwarded) return forwarded;
+
+  return "unknown-client";
+}
+
 /**
  * Initiates the passwordless OTP login/registration flow.
+ * Does not enumerate existing users in the response.
  */
 export async function requestOtpAction(
   rawInput: RequestOtpInput
-): Promise<ActionResponse<{ isNewUser: boolean }>> {
+): Promise<ActionResponse<void>> {
   const parsed = requestOtpSchema.safeParse(rawInput);
   if (!parsed.success) {
     return {
@@ -50,10 +67,7 @@ export async function requestOtpAction(
 
   const { identifier } = parsed.data;
   const headerStore = await headers();
-  const clientIp =
-    headerStore.get("cf-connecting-ip") ||
-    headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "127.0.0.1";
+  const clientIp = getClientIp(headerStore);
 
   // 1. IP-Level Sliding Window Check (5 requests / 10 min)
   const ipRate = await ipOtpRateLimiter.limit(clientIp);
@@ -78,23 +92,10 @@ export async function requestOtpAction(
     };
   }
 
-  // 3. Inspect if user exists in PostgreSQL to prompt full name if new
-  const phoneVariant =
-    parsedIdent.type === "phone" ? normalized.replace("+91", "") : null;
-  const existingUser = await db.query.users.findFirst({
-    where:
-      parsedIdent.type === "phone"
-        ? or(eq(users.phone, normalized), eq(users.phone, phoneVariant!))
-        : eq(users.email, normalized),
-    columns: { id: true },
-  });
-
-  const isNewUser = !existingUser;
-
-  // 4. Generate & Cache SHA-256 OTP Digest in Redis
+  // 3. Generate & Cache SHA-256 OTP Digest in Redis
   const otpResult = await createAndStoreOtp(normalized);
 
-  // 5. Dispatch via Fast2SMS (DLT) or Resend (Email)
+  // 4. Dispatch via Fast2SMS (DLT) or Resend (Email)
   const dispatchResult = await dispatchOtpNotification(
     normalized,
     otpResult.code
@@ -109,7 +110,6 @@ export async function requestOtpAction(
   return {
     success: true,
     message: `Verification code sent successfully to ${normalized}`,
-    data: { isNewUser },
   };
 }
 
@@ -125,6 +125,19 @@ export async function verifyOtpAction(
     requiresName?: boolean;
   }>
 > {
+  const headerStore = await headers();
+  const clientIp = getClientIp(headerStore);
+
+  // IP rate limiting for OTP verification attempts (anti-brute-force)
+  const ipRate = await ipOtpRateLimiter.limit(`verify:${clientIp}`);
+  if (!ipRate.success) {
+    return {
+      success: false,
+      message:
+        "Too many verification attempts from this device. Please wait 10 minutes.",
+    };
+  }
+
   const parsed = verifyOtpSchema.safeParse(rawInput);
   if (!parsed.success) {
     return {
