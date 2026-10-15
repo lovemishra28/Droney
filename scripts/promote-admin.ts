@@ -46,7 +46,17 @@ try {
     .set({ role: "admin", updatedAt: new Date() })
     .where(eq(schema.users.id, user.id));
 
-  console.log(`Admin role granted to ${user.fullName}.`);
+  await db.insert(schema.auditLogs).values({
+    action: "CLI_PROMOTE_USER_TO_ADMIN",
+    entityName: "users",
+    entityId: user.id,
+    payload: {
+      promotedUser: user.email || user.phone,
+      promotedAt: new Date().toISOString(),
+    },
+  });
+
+  console.log(`Admin role granted to ${user.fullName} and recorded in audit log.`);
 } finally {
   await sqlClient.end();
 }

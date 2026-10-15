@@ -12,6 +12,23 @@ import {
 } from "../src/lib/db/schema";
 
 async function main() {
+  if (!process.argv.includes("--confirm-destructive-wipe")) {
+    console.error(
+      "SAFETY GUARD: Refusing to wipe database. You must provide the explicit argument: --confirm-destructive-wipe"
+    );
+    process.exit(1);
+  }
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    !process.argv.includes("--confirm-production-wipe")
+  ) {
+    console.error(
+      "CRITICAL SAFETY GUARD: Refusing to run catalog wipe in production without --confirm-production-wipe."
+    );
+    process.exit(1);
+  }
+
   console.log("Starting catalog database wipe...");
 
   const existing = await db.select({ id: products.id }).from(products);
