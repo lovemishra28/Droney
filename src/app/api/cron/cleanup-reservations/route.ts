@@ -1,15 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
+import crypto from "node:crypto";
 import { purgeExpiredReservations } from "@/server/services/inventory";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "Cron secret not configured on server" },
+      { status: 500 }
+    );
+  }
 
-  // Guard cron route with Bearer token if CRON_SECRET is configured
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return NextResponse.json(
+      { error: "Unauthorized cron trigger" },
+      { status: 401 }
+    );
+  }
+
+  const providedToken = authHeader.slice(7).trim();
+  const tokenBuf = Buffer.from(providedToken);
+  const secretBuf = Buffer.from(cronSecret);
+
   if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
+    tokenBuf.length !== secretBuf.length ||
+    !crypto.timingSafeEqual(tokenBuf, secretBuf)
   ) {
     return NextResponse.json(
       { error: "Unauthorized cron trigger" },
