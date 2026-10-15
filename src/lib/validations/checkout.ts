@@ -51,6 +51,47 @@ export const initiateCheckoutSchema = z.object({
   insuranceDetails: insuranceDetailsSchema,
 });
 
+export const paymentScreenshotUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine(
+    (val) => {
+      if (!val) return true;
+      if (val.startsWith("//") || /^javascript:/i.test(val) || /^data:/i.test(val)) {
+        return false;
+      }
+      // Allow relative storage key
+      if (val.startsWith("payments/") || val.startsWith("/payments/")) {
+        return true;
+      }
+      // If absolute URL, ensure it is http/https and origin matches Cloudflare R2
+      try {
+        const parsed = new URL(val);
+        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+        const allowedR2Origin = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN;
+        if (allowedR2Origin) {
+          try {
+            const r2Host = new URL(allowedR2Origin).hostname.toLowerCase();
+            if (parsed.hostname.toLowerCase() === r2Host) return true;
+          } catch {
+            // ignore malformed env URL
+          }
+        }
+        if (parsed.hostname.toLowerCase().endsWith(".r2.cloudflarestorage.com")) {
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    },
+    {
+      message:
+        "Payment screenshot must be a valid key or URL hosted on the configured Cloudflare R2 storage domain.",
+    }
+  );
+
 export const submitPaymentProofSchema = z.object({
   orderReference: z.string().trim().min(3, "Order reference is required"),
   upiTransactionId: z
@@ -60,7 +101,7 @@ export const submitPaymentProofSchema = z.object({
       upiUtrRegex,
       "Bank UTR / Transaction Reference must be exactly 12 numeric digits"
     ),
-  paymentScreenshotUrl: z.string().url("Invalid screenshot URL").optional(),
+  paymentScreenshotUrl: paymentScreenshotUrlSchema.optional(),
 });
 
 export type ShippingAddressInput = z.infer<typeof shippingAddressSchema>;

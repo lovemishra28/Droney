@@ -5,7 +5,10 @@ import { z } from "zod";
 import { getCurrentSession } from "@/server/services/session";
 import { createPresignedUploadUrl, type PresignedUrlResult } from "@/lib/r2";
 import type { ActionResponse } from "@/server/actions/auth";
-import { createBunnyVideo } from "@/lib/bunny";
+import { redis } from "@/lib/redis";
+import { db } from "@/lib/db";
+import { orders } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -15,7 +18,7 @@ const ALLOWED_IMAGE_TYPES = [
 ] as const;
 
 const presignedProductImageSchema = z.object({
-  productId: z.string().uuid("Invalid product ID"),
+  productId: z.string().uuid("Invalid product ID").optional(),
   filename: z.string().min(1, "Filename is required"),
   contentType: z.enum(ALLOWED_IMAGE_TYPES, {
     message:
@@ -56,9 +59,10 @@ export async function getProductImageUploadUrlAction(
   const { productId, filename, contentType } = parsed.data;
   const fileExt = filename.split(".").pop()?.toLowerCase() || "webp";
   const uniqueId = crypto.randomUUID();
+  const targetId = productId || uniqueId;
 
   // Deterministic file key: products/{productId}/images/{uuid}.{ext}
-  const storageKey = `products/${productId}/images/${uniqueId}.${fileExt}`;
+  const storageKey = `products/${targetId}/images/${uniqueId}.${fileExt}`;
 
   try {
     const result = await createPresignedUploadUrl(storageKey, contentType);
@@ -77,10 +81,19 @@ export async function getProductImageUploadUrlAction(
 
 /**
  * Issues an upload signature for UPI payment confirmation screenshots (Customer checkout flow).
+ * Requires active session and ownership of the order reference.
  */
 export async function getPaymentProofUploadUrlAction(
   rawInput: z.infer<typeof presignedPaymentProofSchema>
 ): Promise<ActionResponse<PresignedUrlResult>> {
+  const session = await getCurrentSession();
+  if (!session) {
+    return {
+      success: false,
+      message: "Unauthorized: Active session required to upload payment proof.",
+    };
+  }
+
   const parsed = presignedPaymentProofSchema.safeParse(rawInput);
   if (!parsed.success) {
     return {
@@ -90,6 +103,36 @@ export async function getPaymentProofUploadUrlAction(
   }
 
   const { orderReference, contentType } = parsed.data;
+
+  // Verify ownership: must match pending checkout in Redis or owned order in Postgres (or admin)
+  let isOwned = session.role === "admin";
+  if (!isOwned) {
+    const pendingDirect = await redis.get<{ userId: string }>(`checkout:${orderReference}`);
+    const pendingScoped = await redis.get<{ userId: string }>(`checkout:${session.sub}:${orderReference}`);
+    const pending = pendingDirect || pendingScoped;
+
+    if (pending?.userId === session.sub) {
+      isOwned = true;
+    } else {
+      const ownedOrder = await db.query.orders.findFirst({
+        where: and(
+          eq(orders.orderReference, orderReference),
+          eq(orders.userId, session.sub)
+        ),
+      });
+      if (ownedOrder) {
+        isOwned = true;
+      }
+    }
+  }
+
+  if (!isOwned) {
+    return {
+      success: false,
+      message: "Unauthorized: You do not have permission to upload proof for this order.",
+    };
+  }
+
   const fileExt = contentType.split("/")[1] || "jpeg";
   const uniqueId = crypto.randomUUID();
 
@@ -111,22 +154,3 @@ export async function getPaymentProofUploadUrlAction(
   }
 }
 
-// Backward-compatible helpers
-export async function generateImageUploadUrl(
-  filename: string,
-  contentType: string
-) {
-  const ext = filename.split(".").pop() || "webp";
-  const key = `uploads/${crypto.randomUUID()}.${ext}`;
-  const result = await createPresignedUploadUrl(key, contentType);
-  return {
-    uploadUrl: result.uploadUrl,
-    publicUrl: result.publicUrl,
-    key: result.storageKey,
-  };
-}
-
-export async function initializeBunnyVideoUpload(title: string) {
-  const result = await createBunnyVideo(title);
-  return result;
-}

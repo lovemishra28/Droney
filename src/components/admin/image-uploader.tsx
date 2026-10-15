@@ -13,7 +13,7 @@ import {
   Plus,
   Link as LinkIcon,
 } from "lucide-react";
-import { generateImageUploadUrl } from "@/server/actions/media";
+import { getProductImageUploadUrlAction } from "@/server/actions/media";
 
 interface ImageUploaderProps {
   initialUrls?: string[];
@@ -23,6 +23,7 @@ interface ImageUploaderProps {
   onRemove?: () => void;
   label?: string;
   maxFiles?: number;
+  productId?: string;
 }
 
 export function ImageUploader({
@@ -33,6 +34,7 @@ export function ImageUploader({
   onRemove,
   label = "Product Image Gallery (Cloudflare R2)",
   maxFiles = 10,
+  productId,
 }: ImageUploaderProps) {
   // Combine initialUrl into initialUrls if provided
   const startingList = initialUrls.length > 0
@@ -63,17 +65,25 @@ export function ImageUploader({
   };
 
   const uploadSingleFile = async (file: File): Promise<string> => {
-    if (!file.type.startsWith("image/")) {
-      throw new Error(`File "${file.name}" is not an image.`);
+    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"] as const;
+    if (!ALLOWED_TYPES.includes(file.type as any)) {
+      throw new Error(`File "${file.name}" has unsupported type. Only JPEG, PNG, WebP, and AVIF are allowed.`);
     }
     if (file.size > 15 * 1024 * 1024) {
       throw new Error(`File "${file.name}" exceeds 15MB limit.`);
     }
 
-    const { uploadUrl, publicUrl } = await generateImageUploadUrl(
-      file.name,
-      file.type
-    );
+    const presignRes = await getProductImageUploadUrlAction({
+      productId,
+      filename: file.name,
+      contentType: file.type as (typeof ALLOWED_TYPES)[number],
+    });
+
+    if (!presignRes.success || !presignRes.data) {
+      throw new Error(presignRes.message || "Failed to authorize image upload.");
+    }
+
+    const { uploadUrl, publicUrl } = presignRes.data;
 
     const res = await fetch(uploadUrl, {
       method: "PUT",

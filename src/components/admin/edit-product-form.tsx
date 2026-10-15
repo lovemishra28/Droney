@@ -837,6 +837,7 @@ export function EditProductForm({ initialProduct }: EditProductFormProps) {
         {/* Direct Cloudflare R2 Multi-Image Drag & Drop Uploader */}
         <ImageUploader
           label="Product Photography Gallery (Upload, reorder, or remove images via Cloudflare R2)"
+          productId={initialProduct.id}
           initialUrls={imageUrls}
           onImagesChange={(urls) => {
             setImageUrls(urls);
