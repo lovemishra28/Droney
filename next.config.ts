@@ -97,14 +97,6 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: bunnyStorageHost,
       },
-      {
-        protocol: "https",
-        hostname: "**",
-      },
-      {
-        protocol: "http",
-        hostname: "localhost",
-      },
     ],
   },
 

@@ -11,6 +11,20 @@ import {
   verifyOtpAction,
 } from "@/server/actions/auth";
 
+function getSafeDestination(rawCallback: string | null, role?: string): string {
+  if (!rawCallback) return role === "admin" ? "/admin" : "/";
+  const trimmed = rawCallback.trim();
+  // Only accept relative, single-slash paths matching /^\/(?!\/)/
+  // Reject absolute protocols (https:, http:, etc.), protocol-relative (//), and javascript: schemes
+  if (!/^\/(?!\/)/.test(trimmed) || /^[\/\\]*javascript:/i.test(trimmed)) {
+    return role === "admin" ? "/admin" : "/";
+  }
+  if (role === "admin") {
+    return trimmed.startsWith("/admin") ? trimmed : "/admin";
+  }
+  return trimmed.startsWith("/admin") ? "/" : trimmed;
+}
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const initialMode = searchParams.get("mode") === "signup" ? "signup" : "signin";
@@ -116,16 +130,7 @@ function LoginForm() {
 
       // Navigate to destination
       const callbackUrl = searchParams.get("callbackUrl");
-      let destination = "/";
-      if (res.data?.role === "admin") {
-        destination =
-          callbackUrl && callbackUrl.startsWith("/admin")
-            ? callbackUrl
-            : "/admin";
-      } else {
-        destination =
-          callbackUrl && !callbackUrl.startsWith("/admin") ? callbackUrl : "/";
-      }
+      const destination = getSafeDestination(callbackUrl, res.data?.role);
 
       window.location.assign(
         new URL(destination, window.location.origin).toString()
@@ -159,8 +164,7 @@ function LoginForm() {
       }
 
       const callbackUrl = searchParams.get("callbackUrl");
-      const destination =
-        callbackUrl && !callbackUrl.startsWith("/admin") ? callbackUrl : "/";
+      const destination = getSafeDestination(callbackUrl, "customer");
       window.location.assign(new URL(destination, window.location.origin).toString());
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration error.");
