@@ -1,11 +1,5 @@
 import type { NextConfig } from "next";
 
-const publicR2Domain = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN
-  ? new URL(process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN)
-  : null;
-const publicBunnyDomain = process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST
-  ? new URL(process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST)
-  : null;
 function parseDomainPattern(domainUrl?: string): { protocol: "http" | "https"; hostname: string } | null {
   if (!domainUrl || typeof domainUrl !== "string" || !domainUrl.trim()) {
     return null;
@@ -115,7 +109,6 @@ const nextConfig: NextConfig = {
               protocol: publicR2Domain.protocol.replace(":", "") as
                 | "http"
                 | "https",
-              protocol: publicR2Domain.protocol,
               hostname: publicR2Domain.hostname,
             },
           ]
@@ -126,7 +119,6 @@ const nextConfig: NextConfig = {
               protocol: publicBunnyDomain.protocol.replace(":", "") as
                 | "http"
                 | "https",
-              protocol: publicBunnyDomain.protocol,
               hostname: publicBunnyDomain.hostname,
             },
           ]
