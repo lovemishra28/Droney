@@ -82,16 +82,9 @@ export default function TradeInValuationPage() {
 
         {/* Header Banner */}
         <div className="border-b border-zinc-200 pb-8 mb-10 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 text-xs font-bold text-zinc-800 font-mono uppercase tracking-widest">
-            <RefreshCw className="h-3.5 w-3.5" />
-            <span>ALTITUDE PILOT TRADE-IN PROGRAM</span>
-          </div>
           <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl text-black">
             Instant Drone Valuation & Doorstep Payout
           </h1>
-          <p className="mt-3 text-xs sm:text-sm text-zinc-600 max-w-2xl mx-auto leading-relaxed">
-            Upgrade your flight gear or receive direct UPI / NEFT bank transfer within 24 hours of technical bench inspection.
-          </p>
         </div>
 
         <div className="mx-auto max-w-5xl">

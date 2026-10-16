@@ -1,11 +1,11 @@
 import type { NextConfig } from "next";
 
-const publicR2Domain = new URL(
-  process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN!
-);
-const publicBunnyDomain = new URL(
-  process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST!
-);
+const publicR2Domain = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN
+  ? new URL(process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN)
+  : null;
+const publicBunnyDomain = process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST
+  ? new URL(process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST)
+  : null;
 const r2StorageHost = process.env.R2_STORAGE_HOST_PATTERN || "";
 const bunnyStorageHost = process.env.BUNNY_STORAGE_HOST_PATTERN || "";
 const supabaseHost = process.env.SUPABASE_HOST_PATTERN || "";
@@ -89,14 +89,26 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**.r2.cloudflarestorage.com",
       },
-      {
-        protocol: publicR2Domain.protocol.replace(":", "") as "http" | "https",
-        hostname: publicR2Domain.hostname,
-      },
-      {
-        protocol: publicBunnyDomain.protocol.replace(":", "") as "http" | "https",
-        hostname: publicBunnyDomain.hostname,
-      },
+      ...(publicR2Domain
+        ? [
+            {
+              protocol: publicR2Domain.protocol.replace(":", "") as
+                | "http"
+                | "https",
+              hostname: publicR2Domain.hostname,
+            },
+          ]
+        : []),
+      ...(publicBunnyDomain
+        ? [
+            {
+              protocol: publicBunnyDomain.protocol.replace(":", "") as
+                | "http"
+                | "https",
+              hostname: publicBunnyDomain.hostname,
+            },
+          ]
+        : []),
       ...(bunnyStorageHost
         ? [
             {
