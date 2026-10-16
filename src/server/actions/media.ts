@@ -154,3 +154,55 @@ export async function getPaymentProofUploadUrlAction(
   }
 }
 
+const presignedStorefrontImageSchema = z.object({
+  section: z.string().min(1).default("hero"),
+  filename: z.string().min(1, "Filename is required"),
+  contentType: z.enum(ALLOWED_IMAGE_TYPES, {
+    message: "Unsupported file type. Only JPEG, PNG, WebP, and AVIF are allowed.",
+  }),
+});
+
+/**
+ * Issues an upload signature for Storefront CMS banners and sliders (Admin only).
+ */
+export async function getStorefrontImageUploadUrlAction(
+  rawInput: z.infer<typeof presignedStorefrontImageSchema>
+): Promise<ActionResponse<PresignedUrlResult>> {
+  const session = await getCurrentSession();
+
+  if (!session || session.role !== "admin") {
+    return {
+      success: false,
+      message: "Unauthorized: Administrator privileges required.",
+    };
+  }
+
+  const parsed = presignedStorefrontImageSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message || "Invalid input parameters.",
+    };
+  }
+
+  const { section, filename, contentType } = parsed.data;
+  const fileExt = filename.split(".").pop()?.toLowerCase() || "webp";
+  const uniqueId = crypto.randomUUID();
+  const storageKey = `storefront/${section}/${uniqueId}.${fileExt}`;
+
+  try {
+    const result = await createPresignedUploadUrl(storageKey, contentType);
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    console.error("[R2 Storefront Presign Error]:", error);
+    return {
+      success: false,
+      message: "Failed to create upload authorization token.",
+    };
+  }
+}
+
+

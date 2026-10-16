@@ -3,6 +3,7 @@ import {
   getLatestModifiedNewArrivals,
   getLatestModifiedPreOwned,
 } from "@/server/queries/catalog";
+import { getAllStorefrontConfigs } from "@/server/queries/storefront-config";
 import { HeroStrips } from "@/components/storefront/hero-strips";
 import { HeroSection } from "@/components/storefront/hero-section";
 import { NewArrivalsAndPreOwnedSection } from "@/components/storefront/new-arrivals-and-preowned";
@@ -15,11 +16,13 @@ import { NewsletterCta } from "@/components/storefront/newsletter-cta";
 export const dynamic = "force-dynamic";
 
 export default async function StorefrontHomePage() {
-  const [allProductsRes, latestNewArrivals, latestPreOwned] = await Promise.all([
-    getProducts({ pageSize: 50, sortBy: "newest" }).catch(() => ({ data: [] })),
-    getLatestModifiedNewArrivals(4),
-    getLatestModifiedPreOwned(2),
-  ]);
+  const [allProductsRes, latestNewArrivals, latestPreOwned, storefrontConfigs] =
+    await Promise.all([
+      getProducts({ pageSize: 50, sortBy: "newest" }).catch(() => ({ data: [] })),
+      getLatestModifiedNewArrivals(4),
+      getLatestModifiedPreOwned(2),
+      getAllStorefrontConfigs(),
+    ]);
 
   const allProducts = allProductsRes.data || [];
 
@@ -34,25 +37,26 @@ export default async function StorefrontHomePage() {
   return (
     <div className="bg-white">
       {/* 1. Altitude Aviation Tech Hero Slider */}
-      <HeroSection />
+      <HeroSection slides={storefrontConfigs.heroSlides} />
 
       {/* 2. Trust & Quality Assurance Strip (Visible upon scrolling) */}
       <HeroStrips />
 
-      {/* 3. New Arrivals & Pre-Owned Showcase (Exactly matching approved design) */}
+      {/* 3. New Arrivals & Pre-Owned Showcase (Dynamic Pre-Owned Slider) */}
       <NewArrivalsAndPreOwnedSection
         newArrivals={latestNewArrivals}
         preOwnedUnits={latestPreOwned}
+        preOwnedSlides={storefrontConfigs.preOwnedSlides}
       />
 
-      {/* 3. Small additions. Big adventures. (Accessories Showcase - Live DB Products) */}
+      {/* 4. Small additions. Big adventures. (Accessories Showcase - Live DB Products) */}
       <AccessoriesShowcase items={accessories} />
 
-      {/* 4. Not sure what you need? Let's figure it out together. (Interactive Pilot Consultation Banner) */}
-      <PilotConsultationBanner />
+      {/* 5. Not sure what you need? Let's figure it out together. (Interactive Pilot Consultation Banner) */}
+      <PilotConsultationBanner config={storefrontConfigs.consultationBanner} />
 
       {/* 6. A little insight. A better flight. (Flight Journal & Technical Guides) */}
-      <FlightJournalShowcase />
+      <FlightJournalShowcase articles={storefrontConfigs.journalArticles} />
 
       {/* 7. Trusted by pilots. Just like you. (Testimonials & 4 Trust Pillars) */}
       <PilotTestimonialsAndTrust />

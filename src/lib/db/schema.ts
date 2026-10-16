@@ -615,6 +615,14 @@ export const inquiries = pgTable(
   ]
 );
 
+export const storefrontConfigs = pgTable("storefront_configs", {
+  key: varchar("key", { length: 64 }).primaryKey(),
+  value: jsonb("value").$type<any>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 // ============================================================================
 // 9. INFERRED TYPESCRIPT TYPES
 // ============================================================================
@@ -659,3 +667,6 @@ export type NewAuditLog = InferInsertModel<typeof auditLogs>;
 
 export type Inquiry = InferSelectModel<typeof inquiries>;
 export type NewInquiry = InferInsertModel<typeof inquiries>;
+
+export type StorefrontConfig = InferSelectModel<typeof storefrontConfigs>;
+export type NewStorefrontConfig = InferInsertModel<typeof storefrontConfigs>;

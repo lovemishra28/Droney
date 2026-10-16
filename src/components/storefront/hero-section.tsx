@@ -1,51 +1,34 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import {
+  DEFAULT_HERO_SLIDES,
+  type HeroSlideItem,
+} from "@/types/storefront-config";
 
-const HERO_SLIDES = [
-  {
-    image: "/images/hero-slide-1.webp?v=20261016",
-    alt: "Altitude Drone Systems",
-    href: "/catalog?category=drones",
-  },
-  {
-    image: "/images/dji-air-3s.webp?v=20261016",
-    alt: "DJI Air 3S",
-    href: "/catalog?search=Air+3S",
-  },
-  {
-    image: "/images/dji-mavic-4-pro.webp?v=20261016",
-    alt: "DJI Mavic 4 Pro",
-    href: "/catalog?search=Mavic+4",
-  },
-  {
-    image: "/images/dji-mini-4-pro.webp?v=20261016",
-    alt: "DJI Mini 4 Pro",
-    href: "/catalog?search=Mini+4+Pro",
-  },
-  {
-    image: "/images/dji-mini-5-pro.webp?v=20261016",
-    alt: "DJI Mini 5 Pro",
-    href: "/catalog?search=Mini+5+Pro",
-  },
-  {
-    image: "/images/dji-avata-360.webp?v=20261016",
-    alt: "DJI Avata 360",
-    href: "/catalog?search=Avata",
-  },
-];
+interface HeroSectionProps {
+  slides?: HeroSlideItem[];
+}
 
-// Append cloned first slide to allow a seamless infinite forward transition without rewinding
-const EXTENDED_SLIDES = [...HERO_SLIDES, HERO_SLIDES[0]];
+export function HeroSection({ slides }: HeroSectionProps) {
+  const currentSlides = useMemo(() => {
+    return slides && slides.length > 0 ? slides : DEFAULT_HERO_SLIDES;
+  }, [slides]);
 
-export function HeroSection() {
+  // Append cloned first slide to allow a seamless infinite forward transition without rewinding
+  const extendedSlides = useMemo(() => {
+    return currentSlides.length > 1
+      ? [...currentSlides, currentSlides[0]]
+      : currentSlides;
+  }, [currentSlides]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
 
   // Active indicator dot index (wraps modulo length)
-  const activeDot = currentIndex % HERO_SLIDES.length;
+  const activeDot = currentIndex % currentSlides.length;
 
   const nextSlide = useCallback(() => {
     setIsTransitioning(true);
@@ -68,22 +51,22 @@ export function HeroSection() {
 
   // Handle seamless infinite loop when transition ends on the cloned slide
   const handleTransitionEnd = useCallback(() => {
-    if (currentIndex >= HERO_SLIDES.length) {
+    if (currentIndex >= currentSlides.length) {
       setIsTransitioning(false);
       setCurrentIndex(0);
     }
-  }, [currentIndex]);
+  }, [currentIndex, currentSlides.length]);
 
   // Fallback safety timeout in case onTransitionEnd doesn't fire
   useEffect(() => {
-    if (currentIndex >= HERO_SLIDES.length) {
+    if (currentIndex >= currentSlides.length) {
       const fallback = setTimeout(() => {
         setIsTransitioning(false);
         setCurrentIndex(0);
       }, 850);
       return () => clearTimeout(fallback);
     }
-  }, [currentIndex]);
+  }, [currentIndex, currentSlides.length]);
 
   return (
     <section
@@ -102,7 +85,7 @@ export function HeroSection() {
         }}
         onTransitionEnd={handleTransitionEnd}
       >
-        {EXTENDED_SLIDES.map((slide, idx) => (
+        {extendedSlides.map((slide, idx) => (
           <Link
             key={`${slide.image}-${idx}`}
             href={slide.href}
@@ -118,6 +101,7 @@ export function HeroSection() {
               className={`w-full h-full select-none ${
                 idx === 0 ? "object-contain" : "object-cover object-center"
               }`}
+              unoptimized={slide.image.startsWith("http")}
             />
           </Link>
         ))}
@@ -126,7 +110,7 @@ export function HeroSection() {
       {/* 2. Slide Indicator Centered at Bottom */}
       <div className="absolute z-20 bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
         <div className="flex items-center gap-2 rounded-full bg-white/80 backdrop-blur-md border border-zinc-200/80 px-3 py-1.5 shadow-md">
-          {HERO_SLIDES.map((_, i) => (
+          {currentSlides.map((_, i) => (
             <button
               key={i}
               type="button"

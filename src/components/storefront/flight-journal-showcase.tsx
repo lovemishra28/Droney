@@ -1,38 +1,21 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
+import {
+  DEFAULT_JOURNAL_ARTICLES,
+  type FlightJournalItem,
+} from "@/types/storefront-config";
 
-const ARTICLES = [
-  {
-    slug: "first-drone-guide",
-    tag: "BUYER'S GUIDE",
-    title: "Your first drone. The right one.",
-    description:
-      "A definitive guide to choosing between sub-249g pilot-friendly quads and 1-inch sensor workhorses without overspending.",
-    image: "/images/journal-first-drone.jpg",
-  },
-  {
-    slug: "cinematic-shutter-dlog",
-    tag: "CINEMATOGRAPHY",
-    title: "Make every frame cinematic.",
-    description:
-      "Understanding the 180-degree shutter rule, D-Log M color profiles, and where to swap neutral density ND glass filters in high noon.",
-    image: "/images/journal-cinematic-road.jpg",
-  },
-  {
-    slug: "high-altitude-lipo-safety",
-    tag: "FIELD INSPECTION",
-    title: "Off the map. Where it all begins.",
-    description:
-      "Sub-zero LiPo battery heating techniques and high-altitude flight safety protocols for cold mountain backcountry missions.",
-    image: "/images/journal-mountain-snow.jpg",
-  },
-];
+interface FlightJournalShowcaseProps {
+  articles?: FlightJournalItem[];
+}
 
-export function FlightJournalShowcase() {
+export function FlightJournalShowcase({ articles }: FlightJournalShowcaseProps) {
+  const currentArticles = (articles && articles.length > 0 ? articles : DEFAULT_JOURNAL_ARTICLES).filter(
+    (a) => a.enabled !== false
+  );
+
   return (
     <section className="bg-white py-14 sm:py-18 text-zinc-900 border-b border-zinc-200/80">
       <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8 space-y-8">
@@ -55,11 +38,11 @@ export function FlightJournalShowcase() {
           </Link>
         </div>
 
-        {/* 3 Large Article Cards Grid */}
+        {/* Dynamic Article Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {ARTICLES.map((article) => (
+          {currentArticles.map((article) => (
             <Link
-              key={article.slug}
+              key={article.id || article.slug}
               href={`/journal/${article.slug}`}
               className="group flex flex-col justify-between rounded-2xl border border-zinc-200/80 bg-white p-4 transition-all duration-300 hover:border-zinc-300 hover:shadow-lg"
             >
@@ -72,6 +55,7 @@ export function FlightJournalShowcase() {
                     fill
                     sizes="(max-width: 768px) 100vw, 33vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    unoptimized={article.image.startsWith("http")}
                   />
                 </div>
 

@@ -1,9 +1,17 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
+import {
+  DEFAULT_CONSULTATION_BANNER,
+  type ConsultationBannerConfig,
+} from "@/types/storefront-config";
 
-export function PilotConsultationBanner() {
+interface PilotConsultationBannerProps {
+  config?: ConsultationBannerConfig;
+}
+
+export function PilotConsultationBanner({ config }: PilotConsultationBannerProps) {
+  const currentConfig = config || DEFAULT_CONSULTATION_BANNER;
+
   return (
     <section className="bg-white py-8 sm:py-12 text-zinc-900 border-b border-zinc-200/80">
       <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8">
@@ -18,14 +26,14 @@ export function PilotConsultationBanner() {
             {/* Left Column: Big bold headline with space between subhead and main headline removed */}
             <div className="space-y-1.5 sm:space-y-2">
               <span className="block text-xl sm:text-2xl lg:text-3xl font-extrabold text-zinc-400 tracking-tight">
-                Not sure what you need?
+                {currentConfig.eyebrow}
               </span>
               <div className="space-y-0.5 sm:space-y-1">
                 <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[0.95]">
-                  Let&apos;s figure
+                  {currentConfig.headlineFirst}
                 </span>
                 <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[#c8f33b] tracking-tight leading-[0.95]">
-                  it out together.
+                  {currentConfig.headlineSecond}
                 </span>
               </div>
             </div>
@@ -33,10 +41,10 @@ export function PilotConsultationBanner() {
             {/* Right Column: High-Impact "Reach Us" Button with Ambient Wireframe Anchor */}
             <div className="relative shrink-0 w-full sm:w-auto flex items-center justify-center">
               <Link
-                href="/consult-pilot"
+                href={currentConfig.buttonHref}
                 className="relative z-10 flex items-center justify-center rounded-2xl bg-[#c8f33b] hover:bg-[#b8e530] text-black font-black text-lg sm:text-xl px-10 sm:px-14 py-4 sm:py-5 shadow-[0_0_30px_rgba(200,243,59,0.25)] hover:shadow-[0_0_45px_rgba(200,243,59,0.4)] transition-all duration-300 active:scale-[0.98] whitespace-nowrap"
               >
-                Reach Us
+                {currentConfig.buttonText}
               </Link>
             </div>
 

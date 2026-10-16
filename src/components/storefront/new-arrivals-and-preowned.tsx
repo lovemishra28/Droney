@@ -19,38 +19,28 @@ import { resolveImageUrl, getProductCoverMedia } from "@/lib/media";
 import { formatINR } from "@/lib/utils";
 import { checkAddToCartAllowed } from "@/lib/auth-client";
 import { SafeImage } from "@/components/ui/safe-image";
+import {
+  DEFAULT_PREOWNED_SLIDES,
+  type PreOwnedSlideItem,
+} from "@/types/storefront-config";
 
-const PREOWNED_SLIDES = [
-  {
-    image: "/images/preowned-slide-1.jpg?v=20261016",
-    alt: "Refurbished DJI Mini Drone",
-  },
-  {
-    image: "/images/preowned-slide-2.jpg?v=20261016",
-    alt: "Verified Pre-Owned DJI Drone Fleet",
-  },
-  {
-    image: "/images/preowned-slide-3.jpg?v=20261016",
-    alt: "Pre-Owned Drones and Aviation Hardware",
-  },
-];
-
-function PreOwnedImageSlider() {
+function PreOwnedImageSlider({ slides }: { slides?: PreOwnedSlideItem[] }) {
+  const currentSlides = slides && slides.length > 0 ? slides : DEFAULT_PREOWNED_SLIDES;
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % PREOWNED_SLIDES.length);
+      setCurrentSlide((prev) => (prev + 1) % currentSlides.length);
     }, 4500);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [currentSlides.length]);
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {PREOWNED_SLIDES.map((slide, index) => (
+      {currentSlides.map((slide, index) => (
         <div
-          key={slide.image}
+          key={`${slide.image}-${index}`}
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
             index === currentSlide
               ? "opacity-100 z-10"
@@ -59,18 +49,19 @@ function PreOwnedImageSlider() {
         >
           <Image
             src={slide.image}
-            alt={slide.alt}
+            alt={slide.alt || "Pre-owned drone slide"}
             fill
             priority={index === 0}
             sizes="(max-width: 1024px) 100vw, 60vw"
             className="object-cover object-center"
+            unoptimized={slide.image.startsWith("http")}
           />
         </div>
       ))}
 
       {/* Subtle indicator dots */}
       <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur-md px-2.5 py-1 border border-zinc-200/80 shadow-sm">
-        {PREOWNED_SLIDES.map((_, i) => (
+        {currentSlides.map((_, i) => (
           <button
             key={i}
             type="button"
@@ -94,12 +85,14 @@ function PreOwnedImageSlider() {
 export interface NewArrivalsAndPreOwnedSectionProps {
   newArrivals?: any[];
   preOwnedUnits?: any[];
+  preOwnedSlides?: PreOwnedSlideItem[];
   initialProducts?: any[]; // backwards compatibility
 }
 
 export function NewArrivalsAndPreOwnedSection({
   newArrivals: passedNewArrivals,
   preOwnedUnits: passedPreOwned,
+  preOwnedSlides,
   initialProducts = [],
 }: NewArrivalsAndPreOwnedSectionProps) {
   const router = useRouter();
@@ -419,7 +412,7 @@ export function NewArrivalsAndPreOwnedSection({
 
                   {/* Right Column: Landscape Drone Photography Slider */}
                   <div className="relative min-h-[300px] sm:min-h-[380px] lg:col-span-7">
-                    <PreOwnedImageSlider />
+                    <PreOwnedImageSlider slides={preOwnedSlides} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:hidden pointer-events-none z-10" />
 
                     {/* Bottom Left Refurbished Minimal Label */}

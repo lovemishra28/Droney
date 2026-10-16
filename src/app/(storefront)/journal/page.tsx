@@ -84,7 +84,18 @@ Thinner alpine air requires motors to spin at significantly higher RPM to genera
 export default function JournalPage() {
   return (
     <div className="bg-white min-h-screen text-zinc-900 py-12">
-      <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8 space-y-12">
+      <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* Back to Home Navigation */}
+        <div>
+          <Link
+            href="/"
+            className="group inline-flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-black transition"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="border-b border-zinc-200 pb-8">
           <div className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-mono font-bold text-zinc-600">

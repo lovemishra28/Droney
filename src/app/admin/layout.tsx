@@ -1,8 +1,8 @@
 import React from "react";
 import { requireAdminSession } from "@/server/queries/admin";
 import { SessionWatcher } from "@/components/admin/session-watcher";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminTopbar } from "@/components/admin/admin-topbar";
+import { AdminNavStrip } from "@/components/admin/admin-nav-strip";
 import { AdminThemeProvider } from "@/components/admin/admin-theme-provider";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
@@ -15,7 +15,7 @@ export default async function AdminLayout({
 }) {
   const session = await requireAdminSession();
 
-  // Query pending payments count for live sidebar notification badge
+  // Query pending payments count for live notification badge
   let pendingApprovalsCount = 0;
   try {
     const pendingApprovalsResult = await db
@@ -35,25 +35,19 @@ export default async function AdminLayout({
 
   return (
     <AdminThemeProvider>
-      <div className="flex min-h-screen selection:bg-[#c8f33b] selection:text-black">
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-[#c8f33b] selection:text-black flex flex-col">
         <SessionWatcher />
 
-        {/* Modern Altitude Operations Sidebar */}
-        <AdminSidebar
-          adminName={session.fullName || "Administrator"}
-          pendingApprovalsCount={pendingApprovalsCount}
-        />
+        {/* Global Storefront-Style Admin Header */}
+        <AdminTopbar adminName={session.fullName || "Administrator"} />
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col md:pl-64 min-w-0">
-          {/* Top Telemetry & Breadcrumb Bar with Theme Switcher */}
-          <AdminTopbar />
+        {/* Horizontal Navigation Strip Directly Under Header */}
+        <AdminNavStrip pendingApprovalsCount={pendingApprovalsCount} />
 
-          {/* Content Workspace */}
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-18 md:pt-8 max-w-[1600px] w-full mx-auto">
-            {children}
-          </main>
-        </div>
+        {/* Main Content Area - Full Screen Width */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">
+          {children}
+        </main>
       </div>
     </AdminThemeProvider>
   );
