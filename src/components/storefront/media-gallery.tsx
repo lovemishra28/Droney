@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Heart, PlayCircle, ShieldCheck } from "lucid
 import { HlsPlayer } from "@/components/storefront/hls-player";
 import { resolveImageUrl } from "@/lib/media";
 import { useWishlistStore } from "@/stores/wishlist-store";
+import { SafeImage } from "@/components/ui/safe-image";
 
 export interface MediaAssetItem {
   id: string;
@@ -83,8 +84,9 @@ export function MediaGallery({
                     </span>
                   </div>
                 ) : (
-                  <Image
-                    src={resolveImageUrl(item.url)}
+                  <SafeImage
+                    src={resolveImageUrl(item.url, productName)}
+                    fallbackSrc={resolveImageUrl(null, productName)}
                     alt={`${productName} thumbnail ${index + 1}`}
                     fill
                     sizes="80px"
@@ -101,7 +103,7 @@ export function MediaGallery({
       <div className="relative aspect-square w-full flex-1 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs group">
         {/* Top Badges (Left) */}
         {isSecondHand && (
-          <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-mono font-bold text-emerald-800 shadow-xs">
+          <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
             <span>Certified Pre-Owned</span>
           </div>
@@ -167,8 +169,9 @@ export function MediaGallery({
           </div>
         ) : (
           <div className="relative h-full w-full bg-zinc-50/50">
-            <Image
-              src={resolveImageUrl(activeAsset.url)}
+            <SafeImage
+              src={resolveImageUrl(activeAsset.url, productName)}
+              fallbackSrc={resolveImageUrl(null, productName)}
               alt={productName}
               fill
               priority

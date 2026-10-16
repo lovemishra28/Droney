@@ -40,18 +40,24 @@ export function SecondHandBadge({
 
   return (
     <div
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold shadow-xs ${gradeStyles.badge}`}
+      className={`inline-flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-tight ${
+        normalizedGrade === "A"
+          ? "text-emerald-700"
+          : normalizedGrade === "B"
+          ? "text-amber-700"
+          : "text-orange-700"
+      }`}
       title={gradeStyles.subtitle}
     >
       <IconComponent className="h-3 w-3" />
       <span>{gradeStyles.title}</span>
       {showLabel && (
-        <span className="hidden font-normal opacity-90 sm:inline">
-          • Certified
+        <span className="hidden font-normal text-zinc-500 sm:inline">
+          · Certified
         </span>
       )}
       {hours !== undefined && hours !== null && (
-        <span className="opacity-75">• {hours}h</span>
+        <span className="text-zinc-500">· {hours}h</span>
       )}
     </div>
   );

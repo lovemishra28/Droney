@@ -106,7 +106,7 @@ export default function KitBuilderPage() {
 
         {/* Top Banner */}
         <div className="border-b border-zinc-200 pb-8 mb-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-bold text-black font-mono">
+          <div className="inline-flex items-center gap-2 text-xs font-bold text-zinc-800 font-mono uppercase tracking-widest">
             <Sliders className="h-3.5 w-3.5" />
             <span>ALTITUDE MODULAR WORKSPACE</span>
           </div>

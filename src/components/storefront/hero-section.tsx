@@ -6,32 +6,32 @@ import Image from "next/image";
 
 const HERO_SLIDES = [
   {
-    image: "/images/hero_image.png?v=20261015",
+    image: "/images/hero-slide-1.webp?v=20261016",
     alt: "Altitude Drone Systems",
     href: "/catalog?category=drones",
   },
   {
-    image: "/images/DJI Air 3S.png",
+    image: "/images/dji-air-3s.webp?v=20261016",
     alt: "DJI Air 3S",
     href: "/catalog?search=Air+3S",
   },
   {
-    image: "/images/DJI Mavic 4 Pro.png",
+    image: "/images/dji-mavic-4-pro.webp?v=20261016",
     alt: "DJI Mavic 4 Pro",
     href: "/catalog?search=Mavic+4",
   },
   {
-    image: "/images/DJI Mini 4 Pro.png",
+    image: "/images/dji-mini-4-pro.webp?v=20261016",
     alt: "DJI Mini 4 Pro",
     href: "/catalog?search=Mini+4+Pro",
   },
   {
-    image: "/images/DJI Mini 5 Pro.png",
+    image: "/images/dji-mini-5-pro.webp?v=20261016",
     alt: "DJI Mini 5 Pro",
     href: "/catalog?search=Mini+5+Pro",
   },
   {
-    image: "/images/DJI-Avata-360.png",
+    image: "/images/dji-avata-360.webp?v=20261016",
     alt: "DJI Avata 360",
     href: "/catalog?search=Avata",
   },
@@ -125,7 +125,7 @@ export function HeroSection() {
 
       {/* 2. Slide Indicator Centered at Bottom */}
       <div className="absolute z-20 bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
-        <div className="flex items-center gap-2 rounded-full bg-black/60 backdrop-blur-md border border-white/15 px-3 py-1.5 shadow-xl">
+        <div className="flex items-center gap-2 rounded-full bg-white/80 backdrop-blur-md border border-zinc-200/80 px-3 py-1.5 shadow-md">
           {HERO_SLIDES.map((_, i) => (
             <button
               key={i}
@@ -135,10 +135,11 @@ export function HeroSection() {
                 goToSlide(i);
               }}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-2 transition-all duration-300 rounded-full cursor-pointer ${i === activeDot
-                  ? "w-7 bg-[#c8f33b] shadow-[0_0_8px_#c8f33b]"
-                  : "w-2 bg-white/30 hover:bg-white/60"
-                }`}
+              className={`h-2 transition-all duration-300 rounded-full cursor-pointer ${
+                i === activeDot
+                  ? "w-7 bg-zinc-900 shadow-xs"
+                  : "w-2 bg-zinc-300 hover:bg-zinc-400"
+              }`}
             />
           ))}
         </div>

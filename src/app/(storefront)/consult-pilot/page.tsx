@@ -64,9 +64,9 @@ export default function ConsultPilotPage() {
 
         {/* Hero Header */}
         <div className="border-b border-zinc-200 pb-8 mb-10 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-bold text-emerald-800 font-mono">
+          <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-800 font-mono uppercase tracking-widest">
             <Radio className="h-3.5 w-3.5" />
-            <span>ALTITUDE PILOT DESK • DIRECT LINE</span>
+            <span>ALTITUDE PILOT DESK · DIRECT LINE</span>
           </div>
           <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl text-black">
             Consult a Certified UAV Pilot

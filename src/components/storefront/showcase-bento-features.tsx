@@ -85,11 +85,11 @@ export function ShowcaseBentoFeatures({ blocks = [] }: ShowcaseBentoFeaturesProp
                     {block.description}
                   </p>
                   {block.specBadges && block.specBadges.length > 0 && (
-                    <div className="flex flex-wrap justify-center gap-2 pt-2">
+                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 pt-2">
                       {block.specBadges.map((badge, bIdx) => (
                         <span
                           key={bIdx}
-                          className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1 text-xs font-mono font-semibold text-zinc-300"
+                          className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase"
                         >
                           {badge}
                         </span>
@@ -135,11 +135,11 @@ export function ShowcaseBentoFeatures({ blocks = [] }: ShowcaseBentoFeaturesProp
                 </p>
 
                 {block.specBadges && block.specBadges.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2">
                     {block.specBadges.map((badge, bIdx) => (
                       <span
                         key={bIdx}
-                        className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1 text-xs font-mono font-semibold text-zinc-300"
+                        className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase"
                       >
                         {badge}
                       </span>

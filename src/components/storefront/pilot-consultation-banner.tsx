@@ -2,159 +2,123 @@
 
 import React from "react";
 import Link from "next/link";
-import { Check, Sparkles, ArrowRight, ShieldCheck, Headphones, Clock, Users } from "lucide-react";
 
 export function PilotConsultationBanner() {
   return (
-    <section className="bg-white py-14 sm:py-18 text-zinc-900 border-b border-zinc-200/80">
+    <section className="bg-white py-8 sm:py-12 text-zinc-900 border-b border-zinc-200/80">
       <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-[#0c1813] p-8 sm:p-12 lg:p-14 text-white shadow-2xl border border-emerald-950">
-          
+        <div className="relative overflow-hidden rounded-3xl bg-[#0c1813] p-8 sm:p-10 lg:p-12 text-white shadow-2xl border border-emerald-950">
+
           {/* Subtle Ambient Radial Glow */}
           <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-emerald-600/10 blur-[100px]" />
           <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#c8f33b]/10 blur-[100px]" />
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-            
-            {/* Left Column: Heading & Value Proposition */}
-            <div className="lg:col-span-6 space-y-6">
-              {/* Pill Badge */}
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/80 px-3.5 py-1 text-xs font-mono font-bold tracking-wider text-emerald-400">
-                <Sparkles className="h-3.5 w-3.5 text-[#c8f33b]" />
-                <span>EXPERT DRONE ENGINEERS (1-ON-1)</span>
-              </div>
+          <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-10 items-start md:items-center justify-between">
 
-              {/* Main Headline */}
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.1] text-white">
+            {/* Left Column: Big bold headline with space between subhead and main headline removed */}
+            <div className="space-y-1.5 sm:space-y-2">
+              <span className="block text-xl sm:text-2xl lg:text-3xl font-extrabold text-zinc-400 tracking-tight">
                 Not sure what you need?
-                <br />
-                <span className="text-[#c8f33b]">Let&apos;s figure it out together.</span>
-              </h2>
-
-              {/* Description */}
-              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-xl">
-                Whether you&apos;re planning your first aerial cinematography purchase, verifying second-hand flight logs, or spec&apos;ing an enterprise mapping rig – our senior flight pilots provide unbiased guidance.
-              </p>
-
-              {/* 3 Value Pillars with Checkmarks */}
-              <ul className="space-y-3 pt-2 text-xs sm:text-sm text-zinc-200">
-                <li className="flex items-center gap-3">
-                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-900/80 text-[#c8f33b] border border-emerald-700/60">
-                    <Check className="h-3 w-3 stroke-[3]" />
-                  </div>
-                  <span>Free 20-minute Google Meet or WhatsApp audio call</span>
-                </li>
-
-                <li className="flex items-center gap-3">
-                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-900/80 text-[#c8f33b] border border-emerald-700/60">
-                    <Check className="h-3 w-3 stroke-[3]" />
-                  </div>
-                  <span>Personalized gear list and realistic budget breakdown</span>
-                </li>
-
-                <li className="flex items-center gap-3">
-                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-900/80 text-[#c8f33b] border border-emerald-700/60">
-                    <Check className="h-3 w-3 stroke-[3]" />
-                  </div>
-                  <span>Zero obligation to purchase; pure technical clarity</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Right Column: Direct Pilot Consultation CTA Card */}
-            <div className="lg:col-span-6">
-              <div className="rounded-2xl bg-white p-7 sm:p-10 text-black shadow-2xl border border-zinc-100 flex flex-col justify-between space-y-6">
-                
-                {/* Status Header */}
-                <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-                      <Headphones className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-black tracking-tight text-black block">
-                        Altitude Pilot Desk
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">
-                        Senior Flight Engineers Active
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Slots available today</span>
-                  </div>
-                </div>
-
-                {/* Consultation Topics Pills */}
-                <div>
-                  <label className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 mb-2">
-                    Available Specializations
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-2 rounded-xl bg-zinc-50 p-2.5 border border-zinc-100 font-medium text-zinc-800">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span>Cinematic & 4K/8K Video</span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl bg-zinc-50 p-2.5 border border-zinc-100 font-medium text-zinc-800">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span>FPV Acro & Tuning</span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl bg-zinc-50 p-2.5 border border-zinc-100 font-medium text-zinc-800">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span>Refurbished Quality Check</span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl bg-zinc-50 p-2.5 border border-zinc-100 font-medium text-zinc-800">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span>Commercial & Surveying</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Prominent Action Button */}
-                <div className="pt-2">
-                  <Link
-                    href="/consult-pilot"
-                    className="group flex w-full items-center justify-between rounded-2xl bg-black px-6 py-5 text-white shadow-xl hover:bg-zinc-900 transition-all active:scale-[0.99] border border-zinc-800"
-                  >
-                    <div className="flex flex-col text-left">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#c8f33b]">
-                        Free 20-Min 1-on-1 Session
-                      </span>
-                      <span className="text-base sm:text-lg font-black tracking-tight text-white mt-0.5 group-hover:text-[#c8f33b] transition-colors">
-                        Book Pilot Consultation
-                      </span>
-                    </div>
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#c8f33b] text-black group-hover:translate-x-1.5 transition-transform shadow-md">
-                      <ArrowRight className="h-5 w-5 stroke-[2.5]" />
-                    </div>
-                  </Link>
-                </div>
-
-                {/* Footer Micro-perks */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 pt-3 text-[11px] text-zinc-500">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 text-zinc-400" />
-                    <span>Avg. Response &lt; 15 mins</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>100% Technical Guidance</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5 text-zinc-400" />
-                    <span>Google Meet or WhatsApp</span>
-                  </div>
-                </div>
-
+              </span>
+              <div className="space-y-0.5 sm:space-y-1">
+                <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[0.95]">
+                  Let&apos;s figure
+                </span>
+                <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[#c8f33b] tracking-tight leading-[0.95]">
+                  it out together.
+                </span>
               </div>
             </div>
 
+            {/* Right Column: High-Impact "Reach Us" Button with Ambient Wireframe Anchor */}
+            <div className="relative shrink-0 w-full sm:w-auto flex items-center justify-center">
+              <Link
+                href="/consult-pilot"
+                className="relative z-10 flex items-center justify-center rounded-2xl bg-[#c8f33b] hover:bg-[#b8e530] text-black font-black text-lg sm:text-xl px-10 sm:px-14 py-4 sm:py-5 shadow-[0_0_30px_rgba(200,243,59,0.25)] hover:shadow-[0_0_45px_rgba(200,243,59,0.4)] transition-all duration-300 active:scale-[0.98] whitespace-nowrap"
+              >
+                Reach Us
+              </Link>
+            </div>
+
+          </div>
+
+          {/* Technical Aviation Drone Blueprint Background Silhouette (Right-anchored) */}
+          <div className="pointer-events-none absolute -right-6 sm:right-6 md:right-16 -top-12 sm:-top-8 bottom-0 w-[300px] sm:w-[380px] md:w-[440px] flex items-center justify-center opacity-20 sm:opacity-25 transition-opacity duration-500 select-none overflow-visible">
+            <svg
+              viewBox="0 0 500 500"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-full h-full text-[#c8f33b]"
+            >
+              {/* Outer Alignment Grid Rings */}
+              <circle cx="250" cy="250" r="220" stroke="currentColor" strokeWidth="0.75" strokeDasharray="4 8" opacity="0.4" />
+              <circle cx="250" cy="250" r="170" stroke="currentColor" strokeWidth="0.75" opacity="0.3" />
+              <circle cx="250" cy="250" r="80" stroke="currentColor" strokeWidth="1" strokeDasharray="3 5" opacity="0.5" />
+
+              {/* Crosshair & Telemetry Axis */}
+              <line x1="250" y1="20" x2="250" y2="480" stroke="currentColor" strokeWidth="0.75" strokeDasharray="6 6" opacity="0.4" />
+              <line x1="20" y1="250" x2="480" y2="250" stroke="currentColor" strokeWidth="0.75" strokeDasharray="6 6" opacity="0.4" />
+
+              {/* Coordinate Reticles */}
+              <path d="M235 250H265M250 235V265" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="250" cy="250" r="12" stroke="currentColor" strokeWidth="1" opacity="0.7" />
+
+              {/* 4 Diagonal Carbon Fiber Arms */}
+              <line x1="250" y1="250" x2="100" y2="100" stroke="currentColor" strokeWidth="3" opacity="0.6" />
+              <line x1="250" y1="250" x2="400" y2="100" stroke="currentColor" strokeWidth="3" opacity="0.6" />
+              <line x1="250" y1="250" x2="100" y2="400" stroke="currentColor" strokeWidth="3" opacity="0.6" />
+              <line x1="250" y1="250" x2="400" y2="400" stroke="currentColor" strokeWidth="3" opacity="0.6" />
+
+              {/* Arm Reinforcement Struts */}
+              <line x1="210" y1="250" x2="130" y2="170" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
+              <line x1="290" y1="250" x2="370" y2="170" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
+              <line x1="210" y1="250" x2="130" y2="330" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
+              <line x1="290" y1="250" x2="370" y2="330" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
+
+              {/* Motor Pods & Propeller Swept Discs */}
+              {/* Rotor 1: Front-Left (CW) */}
+              <circle cx="100" cy="100" r="68" stroke="currentColor" strokeWidth="1.2" strokeDasharray="8 6" opacity="0.6" />
+              <circle cx="100" cy="100" r="22" stroke="currentColor" strokeWidth="2" opacity="0.8" />
+              <circle cx="100" cy="100" r="8" fill="currentColor" opacity="0.4" />
+              <path d="M50 100 Q100 70 150 100" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+
+              {/* Rotor 2: Front-Right (CCW) */}
+              <circle cx="400" cy="100" r="68" stroke="currentColor" strokeWidth="1.2" strokeDasharray="8 6" opacity="0.6" />
+              <circle cx="400" cy="100" r="22" stroke="currentColor" strokeWidth="2" opacity="0.8" />
+              <circle cx="400" cy="100" r="8" fill="currentColor" opacity="0.4" />
+              <path d="M350 100 Q400 70 450 100" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+
+              {/* Rotor 3: Rear-Left (CCW) */}
+              <circle cx="100" cy="400" r="68" stroke="currentColor" strokeWidth="1.2" strokeDasharray="8 6" opacity="0.6" />
+              <circle cx="100" cy="400" r="22" stroke="currentColor" strokeWidth="2" opacity="0.8" />
+              <circle cx="100" cy="400" r="8" fill="currentColor" opacity="0.4" />
+              <path d="M50 400 Q100 370 150 400" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+
+              {/* Rotor 4: Rear-Right (CW) */}
+              <circle cx="400" cy="400" r="68" stroke="currentColor" strokeWidth="1.2" strokeDasharray="8 6" opacity="0.6" />
+              <circle cx="400" cy="400" r="22" stroke="currentColor" strokeWidth="2" opacity="0.8" />
+              <circle cx="400" cy="400" r="8" fill="currentColor" opacity="0.4" />
+              <path d="M350 400 Q400 370 450 400" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+
+              {/* Center Fuselage Aerodynamic Hull */}
+              <rect x="220" y="170" width="60" height="160" rx="28" stroke="currentColor" strokeWidth="2" opacity="0.7" />
+              <rect x="230" y="190" width="40" height="120" rx="18" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
+
+              {/* Forward 3-Axis Gimbal Sensor Suite */}
+              <path d="M235 170 V145 Q235 135 250 135 Q265 135 265 145 V170" stroke="currentColor" strokeWidth="2" opacity="0.8" />
+              <circle cx="250" cy="142" r="7" stroke="currentColor" strokeWidth="1.5" opacity="0.9" />
+
+              {/* Technical Telemetry Badging */}
+              <text x="250" y="375" textAnchor="middle" fill="currentColor" fontSize="11" fontFamily="monospace" letterSpacing="4" opacity="0.7">
+                ALT // AIRFRAME 01
+              </text>
+              <text x="250" y="392" textAnchor="middle" fill="currentColor" fontSize="8" fontFamily="monospace" letterSpacing="2" opacity="0.5">
+                DGCA TELEMETRY OK
+              </text>
+            </svg>
           </div>
         </div>
       </div>
     </section>
   );
 }
-

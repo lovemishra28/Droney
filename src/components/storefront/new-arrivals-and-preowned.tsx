@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -15,9 +15,81 @@ import {
 } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useWishlistStore } from "@/stores/wishlist-store";
-import { resolveImageUrl } from "@/lib/media";
+import { resolveImageUrl, getProductCoverMedia } from "@/lib/media";
 import { formatINR } from "@/lib/utils";
 import { checkAddToCartAllowed } from "@/lib/auth-client";
+import { SafeImage } from "@/components/ui/safe-image";
+
+const PREOWNED_SLIDES = [
+  {
+    image: "/images/preowned-slide-1.jpg?v=20261016",
+    alt: "Refurbished DJI Mini Drone",
+  },
+  {
+    image: "/images/preowned-slide-2.jpg?v=20261016",
+    alt: "Verified Pre-Owned DJI Drone Fleet",
+  },
+  {
+    image: "/images/preowned-slide-3.jpg?v=20261016",
+    alt: "Pre-Owned Drones and Aviation Hardware",
+  },
+];
+
+function PreOwnedImageSlider() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % PREOWNED_SLIDES.length);
+    }, 4500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {PREOWNED_SLIDES.map((slide, index) => (
+        <div
+          key={slide.image}
+          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+            index === currentSlide
+              ? "opacity-100 z-10"
+              : "opacity-0 z-0 pointer-events-none"
+          }`}
+        >
+          <Image
+            src={slide.image}
+            alt={slide.alt}
+            fill
+            priority={index === 0}
+            sizes="(max-width: 1024px) 100vw, 60vw"
+            className="object-cover object-center"
+          />
+        </div>
+      ))}
+
+      {/* Subtle indicator dots */}
+      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur-md px-2.5 py-1 border border-zinc-200/80 shadow-sm">
+        {PREOWNED_SLIDES.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentSlide(i);
+            }}
+            aria-label={`Go to slide ${i + 1}`}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              i === currentSlide
+                ? "w-4 bg-zinc-900"
+                : "w-1.5 bg-zinc-300 hover:bg-zinc-400"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export interface NewArrivalsAndPreOwnedSectionProps {
   newArrivals?: any[];
@@ -144,7 +216,7 @@ export function NewArrivalsAndPreOwnedSection({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {newArrivals.map((product) => {
                 const isSaved = isInWishlist(product.id);
-                const image = resolveImageUrl(product.media?.[0]?.url, product.name);
+                const image = getProductCoverMedia(product.media, product.name);
                 const isAvailable = product.stockQuantity > 0;
 
                 // Derive badge style matching Screenshot 1 (PRE-ORDER, IN STOCK, POPULAR FPV, ULTRA-LIGHT)
@@ -226,8 +298,9 @@ export function NewArrivalsAndPreOwnedSection({
                         href={`/product/${product.slug}`}
                         className="mt-4 block relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-zinc-50/60"
                       >
-                        <Image
+                        <SafeImage
                           src={image}
+                          fallbackSrc={resolveImageUrl(null, product.name)}
                           alt={product.name}
                           fill
                           sizes="(max-width: 768px) 100vw, 25vw"
@@ -314,96 +387,43 @@ export function NewArrivalsAndPreOwnedSection({
             return (
               <div className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-[#0a1813] text-white shadow-2xl">
                 <div className="grid grid-cols-1 lg:grid-cols-12">
-                  {/* Left Column: Landscape Drone Photography */}
-                  <div className="relative min-h-[300px] sm:min-h-[380px] lg:col-span-7">
-                    <Image
-                      src={featuredImg}
-                      alt={featuredTitle}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 60vw"
-                      className="object-cover object-center"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:hidden" />
-
-                    {/* Bottom Left Refurbished Badge matching Screenshot 2 */}
-                    <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/70 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold text-white shadow-lg">
-                      <span className="h-2 w-2 rounded-full bg-[#c8f33b] animate-pulse" />
-                      <span>{featured ? `Refurbished ${featured.name} - Grade ${featuredGrade}` : "Refurbished DJI Mini 3 Pro - Grade A+"}</span>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Pre-Owned Pilot Program Details */}
-                  <div className="flex flex-col justify-between bg-[#0a1813] p-8 sm:p-10 lg:col-span-5 text-white">
+                  {/* Left Column: Pre-Owned Pilot Program Details */}
+                  <div className="flex flex-col justify-between bg-[#0a1813] p-8 sm:p-10 lg:p-12 lg:col-span-5 text-white">
                     <div>
-                      <div className="inline-flex items-center gap-2 text-xs font-mono font-bold tracking-wider text-[#c8f33b] uppercase">
+                      <div className="inline-flex items-center gap-2 text-xs font-mono font-bold tracking-widest text-[#c8f33b] uppercase">
                         <span>PRE-OWNED PILOT PROGRAM</span>
                       </div>
 
-                      <h3 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-                        Less packing.
-                        <br />
-                        More perspective.
-                      </h3>
-
-                      <p className="mt-3 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                        Find verified pre-owned drones tested across a 32-point flight and sensor checklist. Same cinematic performance, without compromising on reliability.
-                      </p>
-
-                      {/* 3 Stats in a Row matching Screenshot 2 */}
-                      <div className="mt-6 grid grid-cols-3 gap-4 border-t border-white/10 pt-6">
-                        <div>
-                          <div className="flex items-center gap-1 text-sm sm:text-base font-bold text-[#c8f33b]">
-                            <span>▲</span>
-                            <span>{weight} g</span>
-                          </div>
-                          <div className="mt-0.5 text-[9px] font-mono tracking-wider text-zinc-400 uppercase">
-                            TAKEOFF WEIGHT
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm sm:text-base font-bold text-white">
-                            {flightTime} min
-                          </div>
-                          <div className="mt-0.5 text-[9px] font-mono tracking-wider text-zinc-400 uppercase">
-                            FLIGHT DURATION
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm sm:text-base font-bold text-white">
-                            4K HDR
-                          </div>
-                          <div className="mt-0.5 text-[9px] font-mono tracking-wider text-zinc-400 uppercase">
-                            VERTICAL VIDEO
-                          </div>
-                        </div>
+                      {/* Prominent Headline with Two-Tier Hierarchy */}
+                      <div className="mt-4 sm:mt-6 space-y-1 sm:space-y-2">
+                        <span className="block text-2xl sm:text-3xl md:text-4xl font-extrabold text-zinc-400 tracking-tight leading-tight">
+                          Less packing.
+                        </span>
+                        <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[0.95]">
+                          More perspective.
+                        </span>
                       </div>
                     </div>
 
-                    {/* Certified Price & Shop Pre-Owned CTA */}
-                    <div className="mt-8 flex flex-wrap items-end justify-between gap-4 border-t border-white/10 pt-6">
-                      <div>
-                        <div className="text-[9px] font-mono tracking-wider text-zinc-400 uppercase">
-                          CERTIFIED PRICE
-                        </div>
-                        <div className="flex items-baseline gap-2 mt-0.5">
-                          <span className="text-2xl sm:text-3xl font-black text-white font-mono">
-                            {formatINR(featuredPrice)}
-                          </span>
-                          {featuredMrp && (
-                            <span className="text-xs sm:text-sm line-through text-zinc-500 font-mono">
-                              {formatINR(featuredMrp)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
+                    {/* Full-Width Shop Pre-Owned CTA */}
+                    <div className="mt-8 border-t border-white/10 pt-6">
                       <Link
                         href="/used-drones"
-                        className="inline-flex items-center gap-1.5 rounded-full bg-[#c8f33b] px-6 py-3 text-xs sm:text-sm font-bold text-black shadow-md hover:bg-[#b8e530] transition active:scale-95"
+                        className="w-full flex items-center justify-center gap-2 rounded-full bg-[#c8f33b] py-3.5 px-6 text-sm sm:text-base font-bold text-black shadow-md hover:bg-[#b8e530] transition active:scale-[0.99]"
                       >
                         <span>Shop Pre-Owned</span>
                         <ArrowRight className="h-4 w-4" />
                       </Link>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Landscape Drone Photography Slider */}
+                  <div className="relative min-h-[300px] sm:min-h-[380px] lg:col-span-7">
+                    <PreOwnedImageSlider />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:hidden pointer-events-none z-10" />
+
+                    {/* Bottom Left Refurbished Minimal Label */}
+                    <div className="absolute bottom-4 left-4 z-20 text-[11px] font-mono font-bold text-zinc-800 drop-shadow-xs tracking-wide">
                     </div>
                   </div>
                 </div>
@@ -425,7 +445,7 @@ export function NewArrivalsAndPreOwnedSection({
                   <div className="flex flex-col justify-between rounded-2xl border border-zinc-200/90 bg-white p-6 shadow-xs hover:border-zinc-300 hover:shadow-lg transition">
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-800 uppercase">
+                        <span className="text-[10px] font-mono font-bold text-emerald-700 uppercase tracking-wider">
                           GRADE {grade} MINT
                         </span>
                         <span className="text-[10px] font-mono text-zinc-500 font-medium">
@@ -479,7 +499,7 @@ export function NewArrivalsAndPreOwnedSection({
               <div className="flex flex-col justify-between rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/70 p-6 text-zinc-500 transition">
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-[10px] font-mono font-bold text-zinc-600 uppercase">
+                    <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
                       PRE-OWNED INTAKE
                     </span>
                     <span className="text-[10px] font-mono text-zinc-400">
@@ -517,7 +537,7 @@ export function NewArrivalsAndPreOwnedSection({
                   <div className="flex flex-col justify-between rounded-2xl border border-zinc-200/90 bg-white p-6 shadow-xs hover:border-zinc-300 hover:shadow-lg transition">
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-800 uppercase">
+                        <span className="text-[10px] font-mono font-bold text-emerald-700 uppercase tracking-wider">
                           CERTIFIED REFURBISHED
                         </span>
                         <span className="text-[10px] font-mono text-zinc-500 font-medium">
@@ -571,7 +591,7 @@ export function NewArrivalsAndPreOwnedSection({
               <div className="flex flex-col justify-between rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/70 p-6 text-zinc-500 transition">
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-[10px] font-mono font-bold text-zinc-600 uppercase">
+                    <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
                       CERTIFIED REFURBISHED
                     </span>
                     <span className="text-[10px] font-mono text-zinc-400">
@@ -597,32 +617,22 @@ export function NewArrivalsAndPreOwnedSection({
               </div>
             )}
 
-            {/* Card 3: TRADE-IN VALUATION — EXACT MATCH TO SCREENSHOT 2 */}
-            <div className="flex flex-col justify-between rounded-2xl border border-zinc-800 bg-[#111111] p-6 text-white shadow-md hover:border-zinc-700 transition">
-              <div>
-                <div className="text-[10px] font-mono font-bold tracking-wider text-[#c8f33b] uppercase">
-                  TRADE-IN VALUATION
-                </div>
-
-                <h4 className="mt-3 text-base font-bold text-white">
-                  Have a drone sitting idle?
+            {/* Card 3: TRADE-IN VALUATION */}
+            <div className="flex flex-col justify-between rounded-2xl border border-zinc-800 bg-[#111111] p-6 sm:p-7 text-white shadow-md hover:border-zinc-700 transition">
+              <div className="flex-1 flex flex-col justify-center py-2">
+                <h4 className="text-2xl sm:text-3xl lg:text-[2rem] font-black text-white tracking-tight leading-[1.15]">
+                  Have a drone <br className="hidden sm:inline" />
+                  sitting idle?
                 </h4>
-                <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">
-                  Upgrade your kit or get paid instant bank transfer. We offer transparent doorstep pickup across India.
-                </p>
               </div>
 
-              <div className="mt-6 flex items-center justify-between border-t border-zinc-800 pt-4">
-                <span className="text-xs font-mono text-zinc-400">
-                  Instant quote in 3 mins
-                </span>
-
+              <div className="mt-6 border-t border-zinc-800/80 pt-4">
                 <Link
                   href="/trade-in"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#c8f33b] px-4 py-2 text-xs font-bold text-black hover:bg-[#b8e530] transition active:scale-95"
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#c8f33b] py-3 px-4 text-xs sm:text-sm font-bold text-black hover:bg-[#b8e530] transition active:scale-[0.99] shadow-md"
                 >
                   <span>Get Valuation</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>

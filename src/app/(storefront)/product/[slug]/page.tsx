@@ -155,12 +155,12 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                     SKU: {product.sku}
                   </span>
                   {product.isSecondHand ? (
-                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-mono font-bold text-emerald-800 uppercase">
-                      Grade {product.secondHandDetails?.cosmeticGrade || "A"} Certified Pre-Owned
+                    <span className="text-[11px] font-mono font-bold text-emerald-700 uppercase tracking-wider">
+                      · Grade {product.secondHandDetails?.cosmeticGrade || "A"} Certified Pre-Owned
                     </span>
                   ) : (
-                    <span className="rounded-full bg-black px-2.5 py-0.5 text-[10px] font-mono font-bold text-[#c8f33b] uppercase">
-                      Authorised Indian Retail
+                    <span className="text-[11px] font-mono font-bold text-zinc-900 uppercase tracking-wider">
+                      · Authorised Indian Retail
                     </span>
                   )}
                 </div>

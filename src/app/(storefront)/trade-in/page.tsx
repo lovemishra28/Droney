@@ -82,7 +82,7 @@ export default function TradeInValuationPage() {
 
         {/* Header Banner */}
         <div className="border-b border-zinc-200 pb-8 mb-10 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-100 px-3.5 py-1 text-xs font-bold text-black font-mono">
+          <div className="inline-flex items-center gap-2 text-xs font-bold text-zinc-800 font-mono uppercase tracking-widest">
             <RefreshCw className="h-3.5 w-3.5" />
             <span>ALTITUDE PILOT TRADE-IN PROGRAM</span>
           </div>

@@ -46,7 +46,7 @@ export default async function UsedDronesPage({
         {/* Hero Certification Banner */}
         <div className="relative overflow-hidden rounded-3xl bg-black text-white p-8 sm:p-12 shadow-lg mb-10">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold text-emerald-400 font-mono">
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-400 font-mono uppercase tracking-widest">
               <ShieldCheck className="h-4 w-4" />
               <span>ALTITUDE CERTIFIED PRE-OWNED FLEET</span>
             </div>

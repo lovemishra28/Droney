@@ -17,9 +17,10 @@ import {
 import { SecondHandBadge } from "@/components/storefront/second-hand-badge";
 import { env } from "@/lib/env";
 import { formatINR } from "@/lib/utils";
-import { resolveImageUrl } from "@/lib/media";
+import { resolveImageUrl, getProductCoverMedia } from "@/lib/media";
 import { isValidProductId, useCartStore } from "@/stores/cart-store";
 import { checkAddToCartAllowed } from "@/lib/auth-client";
+import { SafeImage } from "@/components/ui/safe-image";
 
 export interface UsedDroneProps {
   product: {
@@ -49,11 +50,10 @@ export function UsedDroneCard({ product }: UsedDroneProps) {
   const details = product.secondHandDetails;
   const grade = details?.cosmeticGrade || "A";
 
-  const rawImg = product.media?.find((m) => m.mediaType === "image")?.url;
   const fallbackImg = "/images/preowned-mini-canyon.jpg";
   const primaryImage =
-    rawImg && (rawImg.startsWith("/images/") || rawImg.startsWith("http://") || rawImg.startsWith("https://"))
-      ? resolveImageUrl(rawImg)
+    product.media && product.media.length > 0
+      ? getProductCoverMedia(product.media, product.name)
       : fallbackImg;
 
   const isInCart = items.some((item) => item.productId === product.id);
@@ -104,8 +104,9 @@ export function UsedDroneCard({ product }: UsedDroneProps) {
           href={`/product/${product.slug}`}
           className="relative block h-full w-full"
         >
-          <Image
+          <SafeImage
             src={primaryImage}
+            fallbackSrc={fallbackImg}
             alt={product.name}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"

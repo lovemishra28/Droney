@@ -64,7 +64,86 @@ export function ImageUploader({
     }
   };
 
-  const uploadSingleFile = async (file: File): Promise<string> => {
+  const compressImageToWebP = async (
+    file: File,
+    maxWidth = 1920,
+    maxHeight = 1920,
+    quality = 0.85
+  ): Promise<File> => {
+    // If it's already a small WebP (< 250KB), no re-compression needed
+    if (file.type === "image/webp" && file.size < 250 * 1024) {
+      return file;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      return file;
+    }
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let { width, height } = img;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width / height > maxWidth / maxHeight) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const baseName =
+              file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
+            const cleanName = `${baseName.replace(/\s+/g, "-").toLowerCase()}.webp`;
+            const compressedFile = new File([blob], cleanName, {
+              type: "image/webp",
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          "image/webp",
+          quality
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(file);
+      };
+
+      img.src = objectUrl;
+    });
+  };
+
+  const uploadSingleFile = async (rawFile: File): Promise<string> => {
+    // Auto-compress to modern WebP format for fast loading and reduced payload
+    const file = await compressImageToWebP(rawFile);
+
     const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"] as const;
     if (!ALLOWED_TYPES.includes(file.type as any)) {
       throw new Error(`File "${file.name}" has unsupported type. Only JPEG, PNG, WebP, and AVIF are allowed.`);
@@ -258,10 +337,10 @@ export function ImageUploader({
             <div className="flex flex-col items-center gap-2 py-3">
               <Loader2 className="h-7 w-7 animate-spin text-lime-600 dark:text-[#c8f33b]" />
               <p className="text-xs font-bold text-zinc-900 dark:text-white">
-                Streaming {uploadingCount} photo(s) directly to Cloudflare R2...
+                Optimizing & uploading {uploadingCount} photo(s) to Cloudflare R2...
               </p>
               <span className="text-[11px] font-mono text-zinc-500">
-                Presigned S3 multipart streaming in progress
+                Auto-compressing to lightweight WebP format
               </span>
             </div>
           ) : (
@@ -273,7 +352,7 @@ export function ImageUploader({
                 Drag & drop multiple photos or click to browse
               </p>
               <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Supports selecting multiple files at once • PNG, JPG, WebP up to 15MB each
+                Auto-compressed to WebP for instant loading • Supports PNG, JPG, WebP
               </p>
             </>
           )}

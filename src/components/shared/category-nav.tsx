@@ -484,25 +484,20 @@ export function CategoryNav({ initialProducts = [] }: CategoryNavProps) {
             <div className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8 pt-2 pb-6">
               <div className="rounded-2xl border border-zinc-200/90 bg-white shadow-2xl p-6 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
                 
-                {/* 1. Left Section: Brand & Value Prop Statement (3 Cols) */}
-                <div className="lg:col-span-3 flex flex-col justify-between rounded-xl bg-zinc-950 p-6 text-white relative overflow-hidden shadow-inner">
+                {/* 1. Left Section: Brand Statement (3 Cols) */}
+                <div className="lg:col-span-3 flex flex-col justify-between rounded-xl bg-zinc-950 p-6 sm:p-7 text-white relative overflow-hidden shadow-inner min-h-[260px]">
                   {/* Subtle Background Glow */}
-                  <div className="absolute -top-12 -right-12 h-36 w-36 rounded-full bg-[#c8f33b]/10 blur-2xl pointer-events-none" />
+                  <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-[#c8f33b]/10 blur-2xl pointer-events-none" />
 
-                  <div className="relative space-y-3">
-                    <span className="inline-flex items-center gap-1 rounded bg-[#c8f33b]/15 border border-[#c8f33b]/30 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#c8f33b]">
-                      <span className="h-1 w-1 rounded-full bg-[#c8f33b]" />
-                      {activeContent.callout.tag}
-                    </span>
-                    <h3 className="text-lg font-black tracking-tight text-white leading-snug">
-                      {activeContent.callout.title}
-                    </h3>
-                    <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-                      {activeContent.callout.description}
-                    </p>
-                  </div>
+                  <span className="relative inline-block text-[10px] font-mono font-bold uppercase tracking-widest text-[#c8f33b]">
+                    {activeContent.callout.tag}
+                  </span>
 
-                  <div className="relative pt-6">
+                  <h3 className="relative my-auto py-4 text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
+                    {activeContent.callout.title}
+                  </h3>
+
+                  <div className="relative pt-4 border-t border-white/10">
                     <Link
                       href={activeContent.callout.linkHref}
                       onClick={closeMenuImmediately}
@@ -514,34 +509,34 @@ export function CategoryNav({ initialProducts = [] }: CategoryNavProps) {
                   </div>
                 </div>
 
-                {/* 2. Middle Section: Directory Columns (6 Cols) */}
-                <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-6 py-1">
+                {/* 2. Directory Columns: Expanded evenly to 9 Cols across remaining width */}
+                <div className="lg:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-8 lg:gap-14 py-2 px-2 sm:px-6">
                   {activeContent.columns.map((col, idx) => (
                     <div key={idx} className="space-y-3">
-                      <h4 className="text-[10px] font-black tracking-wider text-zinc-400 uppercase font-mono border-b border-zinc-100 pb-2">
+                      <h4 className="text-[11px] font-black tracking-wider text-zinc-400 uppercase font-mono border-b border-zinc-100 pb-2.5">
                         {col.heading}
                       </h4>
-                      <ul className="space-y-2">
+                      <ul className="space-y-2.5">
                         {col.links.map((link, lIdx) => (
                           <li key={lIdx}>
                             <Link
                               href={link.href}
                               onClick={closeMenuImmediately}
-                              className="group flex items-center justify-between text-xs font-medium text-zinc-700 hover:text-black hover:translate-x-0.5 transition-all py-0.5"
+                              className="group flex items-center justify-between text-xs sm:text-[13px] font-medium text-zinc-700 hover:text-black hover:translate-x-1 transition-all py-0.5"
                             >
-                              <span className="group-hover:font-semibold transition line-clamp-1 pr-1">
+                              <span className="group-hover:font-semibold transition line-clamp-1 pr-2">
                                 {link.label}
                               </span>
                               {link.badge && (
                                 <span
-                                  className={`rounded px-1.5 py-0.2 text-[9px] font-bold tracking-tight uppercase shrink-0 ${
+                                  className={`text-[9px] font-mono font-bold tracking-wider uppercase shrink-0 px-1.5 py-0.5 rounded ${
                                     link.badgeColor === "lime"
-                                      ? "bg-[#c8f33b] text-black"
+                                      ? "bg-[#c8f33b]/20 text-[#4c682f] font-bold"
                                       : link.badgeColor === "amber"
-                                      ? "bg-[#fff275] text-amber-950"
+                                      ? "bg-amber-100 text-amber-800"
                                       : link.badgeColor === "emerald"
                                       ? "bg-emerald-100 text-emerald-800"
-                                      : "bg-zinc-200 text-zinc-800"
+                                      : "bg-zinc-100 text-zinc-600"
                                   }`}
                                 >
                                   {link.badge}
@@ -553,72 +548,6 @@ export function CategoryNav({ initialProducts = [] }: CategoryNavProps) {
                       </ul>
                     </div>
                   ))}
-                </div>
-
-                {/* 3. Right Section: Featured Product Showcase Card (3 Cols) */}
-                <div className="lg:col-span-3 flex flex-col justify-between rounded-xl border border-zinc-200/90 bg-zinc-50/70 p-4 transition-all hover:bg-white hover:border-zinc-300 hover:shadow-lg group">
-                  <div>
-                    {/* Badge & Price */}
-                    <div className="flex items-center justify-between">
-                      <span className="rounded-full bg-black px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#c8f33b]">
-                        {activeContent.featured.badge}
-                      </span>
-                      <span className="text-xs font-black font-mono text-black">
-                        {activeContent.featured.price}
-                      </span>
-                    </div>
-
-                    {/* Product Image */}
-                    <Link
-                      href={activeContent.featured.href}
-                      onClick={closeMenuImmediately}
-                      className="mt-3 block overflow-hidden rounded-lg aspect-[16/10] bg-zinc-100 relative"
-                    >
-                      <img
-                        src={activeContent.featured.image}
-                        alt={activeContent.featured.name}
-                        className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </Link>
-
-                    {/* Product Info */}
-                    <div className="mt-3">
-                      <Link
-                        href={activeContent.featured.href}
-                        onClick={closeMenuImmediately}
-                        className="text-xs font-black text-black hover:underline line-clamp-1"
-                      >
-                        {activeContent.featured.name}
-                      </Link>
-                      <p className="mt-1 text-[11px] text-zinc-500 line-clamp-2 leading-snug">
-                        {activeContent.featured.subtitle}
-                      </p>
-
-                      {/* Specs */}
-                      <div className="mt-2.5 flex flex-wrap gap-1.5">
-                        {activeContent.featured.specs.map((spec, sIdx) => (
-                          <span
-                            key={sIdx}
-                            className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-zinc-600 font-medium"
-                          >
-                            {spec}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* CTA Button */}
-                  <div className="mt-4 pt-3 border-t border-zinc-200/80">
-                    <Link
-                      href={activeContent.featured.href}
-                      onClick={closeMenuImmediately}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-black py-2 text-xs font-bold text-white shadow-xs hover:bg-zinc-800 transition active:scale-98"
-                    >
-                      <span>Shop Now</span>
-                      <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  </div>
                 </div>
 
               </div>

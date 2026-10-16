@@ -6,9 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Plus, ShieldCheck } from "lucide-react";
 import { formatINR } from "@/lib/utils";
-import { resolveImageUrl } from "@/lib/media";
+import { resolveImageUrl, getProductCoverMedia } from "@/lib/media";
 import { isValidProductId, useCartStore } from "@/stores/cart-store";
 import { checkAddToCartAllowed } from "@/lib/auth-client";
+import { SafeImage } from "@/components/ui/safe-image";
 
 export interface ProductCardData {
   id: string;
@@ -19,7 +20,7 @@ export interface ProductCardData {
   stockQuantity: number;
   isSecondHand: boolean;
   category?: { name: string; slug: string } | null;
-  media?: { url: string; mediaType: "image" | "video" }[];
+  media?: { url: string; mediaType: "image" | "video"; displayOrder?: number }[];
   secondHandDetails?: { cosmeticGrade: string } | null;
   cosmeticGrade?: string;
   thumbnailUrl?: string;
@@ -35,7 +36,7 @@ export interface ProductCardProps {
   stockQuantity?: number;
   isSecondHand?: boolean;
   category?: { name: string; slug: string } | null;
-  media?: { url: string; mediaType: "image" | "video" }[];
+  media?: { url: string; mediaType: "image" | "video"; displayOrder?: number }[];
   secondHandDetails?: { cosmeticGrade: string } | null;
   cosmeticGrade?: string;
   thumbnailUrl?: string;
@@ -43,6 +44,7 @@ export interface ProductCardProps {
 
 function getCardFallbackImage(name: string, sku: string): string {
   const lower = (name + " " + sku).toLowerCase();
+  if (lower.includes("mavic 4") || lower.includes("m4p") || lower.includes("mavic-4")) return "/images/dji-mavic-4-pro.webp";
   if (lower.includes("air 3s") || lower.includes("a3s")) return "/images/dji-air-3s.jpg";
   if (lower.includes("mavic 3") || lower.includes("m3p")) return "/images/dji-mavic-3-pro.jpg";
   if (lower.includes("avata 2") || lower.includes("av2")) return "/images/dji-avata-2.jpg";
@@ -75,14 +77,12 @@ export function ProductCard(props: ProductCardProps) {
   const { addItem, items } = useCartStore();
   const [addedRecently, setAddedRecently] = React.useState(false);
 
-  const rawUrl =
-    product.media?.find((m) => m.mediaType === "image")?.url ||
-    props.thumbnailUrl;
-  
   const fallbackImg = getCardFallbackImage(product.name, product.sku);
   const primaryImage =
-    rawUrl && (rawUrl.startsWith("/images/") || rawUrl.startsWith("http://") || rawUrl.startsWith("https://"))
-      ? resolveImageUrl(rawUrl)
+    product.media && product.media.length > 0
+      ? getProductCoverMedia(product.media, product.name)
+      : props.thumbnailUrl
+      ? resolveImageUrl(props.thumbnailUrl, product.name)
       : fallbackImg;
 
   const isInCart = items.some((item) => item.productId === product.id);
@@ -125,9 +125,9 @@ export function ProductCard(props: ProductCardProps) {
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-4 transition-all duration-300 hover:border-zinc-300 hover:shadow-lg">
       {/* Visual Badges: Condition & Stock */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5">
+      <div className="absolute top-3.5 left-3.5 z-10">
         {product.isSecondHand && (
-          <span className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+          <span className="flex items-center gap-1 text-[10px] font-mono font-bold tracking-wider uppercase text-emerald-800">
             <ShieldCheck className="h-3 w-3" />
             Grade {grade} Pre-Owned
           </span>
@@ -139,8 +139,9 @@ export function ProductCard(props: ProductCardProps) {
         href={`/product/${product.slug}`}
         className="relative aspect-square w-full overflow-hidden rounded-xl bg-zinc-50 border border-zinc-100"
       >
-        <Image
+        <SafeImage
           src={primaryImage}
+          fallbackSrc={fallbackImg}
           alt={product.name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"

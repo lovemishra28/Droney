@@ -13,6 +13,13 @@ export function resolveImageUrl(
     url.trim() === "" ||
     url.includes("placeholder")
   ) {
+    if (
+      combined.includes("mavic 4") ||
+      combined.includes("m4p") ||
+      combined.includes("mavic-4")
+    ) {
+      return "/images/dji-mavic-4-pro.webp";
+    }
     if (combined.includes("air 3") || combined.includes("a3s")) {
       return "/images/dji-air-3s.jpg";
     }
@@ -94,3 +101,33 @@ export function resolveImageUrl(
   // Fallback
   return localMediaFallback;
 }
+
+export function getProductCoverMedia(
+  media?: { url: string; mediaType?: string; displayOrder?: number }[] | null,
+  productName?: string
+): string {
+  if (!media || media.length === 0) {
+    return resolveImageUrl(null, productName);
+  }
+
+  const imageMedia = media.filter(
+    (m) => !m.mediaType || m.mediaType === "image"
+  );
+  if (imageMedia.length === 0) {
+    return resolveImageUrl(null, productName);
+  }
+
+  // Sort by displayOrder ascending
+  const sorted = [...imageMedia].sort(
+    (a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
+  );
+
+  // If a WebP image is available with low order, prioritize it for fast loading
+  const webpMatch = sorted.find(
+    (m) => (m.displayOrder ?? 999) <= 1 && m.url?.toLowerCase().endsWith(".webp")
+  );
+
+  const picked = webpMatch?.url || sorted[0]?.url;
+  return resolveImageUrl(picked, productName);
+}
+

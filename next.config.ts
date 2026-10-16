@@ -83,7 +83,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: r2StorageHost,
+        hostname: "**.r2.dev",
+      },
+      {
+        protocol: "https",
+        hostname: "**.r2.cloudflarestorage.com",
       },
       {
         protocol: publicR2Domain.protocol.replace(":", "") as "http" | "https",
@@ -93,10 +97,16 @@ const nextConfig: NextConfig = {
         protocol: publicBunnyDomain.protocol.replace(":", "") as "http" | "https",
         hostname: publicBunnyDomain.hostname,
       },
-      {
-        protocol: "https",
-        hostname: bunnyStorageHost,
-      },
+      ...(bunnyStorageHost
+        ? [
+            {
+              protocol: "https" as const,
+              hostname: bunnyStorageHost
+                .replace(/^https?:\/\//i, "")
+                .replace(/\/.*$/, ""),
+            },
+          ]
+        : []),
     ],
   },
 
