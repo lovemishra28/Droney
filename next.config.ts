@@ -6,6 +6,26 @@ const publicR2Domain = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN
 const publicBunnyDomain = process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST
   ? new URL(process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST)
   : null;
+function parseDomainPattern(domainUrl?: string): { protocol: "http" | "https"; hostname: string } | null {
+  if (!domainUrl || typeof domainUrl !== "string" || !domainUrl.trim()) {
+    return null;
+  }
+  try {
+    const formatted = domainUrl.startsWith("http://") || domainUrl.startsWith("https://")
+      ? domainUrl
+      : `https://${domainUrl}`;
+    const parsed = new URL(formatted);
+    return {
+      protocol: (parsed.protocol.replace(":", "") as "http" | "https") || "https",
+      hostname: parsed.hostname,
+    };
+  } catch {
+    return null;
+  }
+}
+
+const publicR2Domain = parseDomainPattern(process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN);
+const publicBunnyDomain = parseDomainPattern(process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN_HOST);
 const r2StorageHost = process.env.R2_STORAGE_HOST_PATTERN || "";
 const bunnyStorageHost = process.env.BUNNY_STORAGE_HOST_PATTERN || "";
 const supabaseHost = process.env.SUPABASE_HOST_PATTERN || "";
@@ -95,6 +115,7 @@ const nextConfig: NextConfig = {
               protocol: publicR2Domain.protocol.replace(":", "") as
                 | "http"
                 | "https",
+              protocol: publicR2Domain.protocol,
               hostname: publicR2Domain.hostname,
             },
           ]
@@ -105,6 +126,7 @@ const nextConfig: NextConfig = {
               protocol: publicBunnyDomain.protocol.replace(":", "") as
                 | "http"
                 | "https",
+              protocol: publicBunnyDomain.protocol,
               hostname: publicBunnyDomain.hostname,
             },
           ]
