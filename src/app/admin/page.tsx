@@ -4,11 +4,8 @@ import {
   AlertTriangle,
   ArrowRight,
   Clock,
-  ExternalLink,
-  FileSpreadsheet,
   IndianRupee,
   Package,
-  Plus,
   ShoppingBag,
   Zap,
 } from "lucide-react";
@@ -19,53 +16,7 @@ export default async function AdminOverviewPage() {
   const metrics = await getAdminOverviewMetrics();
 
   return (
-    <div className="space-y-8">
-      {/* Top Welcome & Operations Status Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800/80 pb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-lime-500 dark:bg-[#c8f33b]" />
-            <span className="font-mono text-xs font-bold uppercase tracking-wider text-lime-700 dark:text-[#c8f33b]">
-              Fleet Telemetry Live
-            </span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-zinc-900 dark:text-white sm:text-3xl font-sans">
-            Operations & Fleet Overview
-          </h1>
-          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-            Real-time direct UPI settlement queue, product inventory thresholds, and dispatch pipeline.
-          </p>
-        </div>
-
-        {/* Quick Action Shortcuts */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            href="/admin/products/new"
-            className="flex items-center gap-1.5 rounded-xl bg-black dark:bg-[#c8f33b] px-3.5 py-2 text-xs font-bold text-white dark:text-black transition-all hover:opacity-90 dark:hover:bg-[#b5e028] shadow-xs"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Add New Product</span>
-          </Link>
-
-          <Link
-            href="/admin/import"
-            className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-200 transition-colors hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-black dark:hover:text-white shadow-xs"
-          >
-            <FileSpreadsheet className="h-3.5 w-3.5 text-zinc-400" />
-            <span>Bulk CSV Ingest</span>
-          </Link>
-
-          <Link
-            href="/"
-            target="_blank"
-            className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-200 transition-colors hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-black dark:hover:text-white shadow-xs"
-          >
-            <span>Live Store</span>
-            <ExternalLink className="h-3.5 w-3.5 text-zinc-400" />
-          </Link>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       {/* Metric Telemetry Cards Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total Verified Revenue */}

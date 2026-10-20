@@ -35,6 +35,8 @@ interface CartStoreState {
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  setAllInsurance: (hasInsurance: boolean) => void;
+  toggleItemInsurance: (productId: string) => void;
   getTotalPaise: () => number;
   getItemCount: () => number;
   // Backward compatibility alias
@@ -126,6 +128,22 @@ export const useCartStore = create<CartStoreState>()(
       },
 
       clearCart: () => set({ items: [] }),
+
+      setAllInsurance: (hasInsurance: boolean) => {
+        set({
+          items: get().items.map((i) => ({ ...i, hasInsurance })),
+        });
+      },
+
+      toggleItemInsurance: (productId: string) => {
+        set({
+          items: get().items.map((i) =>
+            i.productId === productId
+              ? { ...i, hasInsurance: !i.hasInsurance }
+              : i
+          ),
+        });
+      },
 
       getTotalPaise: () => {
         return get().items.reduce(

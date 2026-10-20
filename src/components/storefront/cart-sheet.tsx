@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { ArrowRight, Check, Minus, Plus, Shield, ShoppingBag, Trash2, X } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { formatINR } from "@/lib/utils";
 
@@ -36,6 +36,7 @@ export function CartSheet({
 
   const { items, updateQuantity, removeItem, getTotalPaise } = store;
   const totalPaise = getTotalPaise();
+  const hasAnyInsurance = items.some((i) => i.hasInsurance);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -124,6 +125,13 @@ export function CartSheet({
                         </span>
                       )}
 
+                      {item.hasInsurance && (
+                        <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+                          <Shield className="h-3 w-3" />
+                          <span>Fly Care Insured</span>
+                        </span>
+                      )}
+
                       <p className="mt-1 text-sm font-semibold text-zinc-200">
                         {formatINR(item.basePricePaise)}
                       </p>
@@ -181,6 +189,42 @@ export function CartSheet({
             <p className="mt-1 text-xs text-zinc-500">
               Shipping & taxes calculated at checkout via UPI.
             </p>
+
+            {/* Avail Fly Care Insurance Option in Cart */}
+            <div
+              onClick={() => store.setAllInsurance(!hasAnyInsurance)}
+              className={`mt-3 cursor-pointer rounded-xl border p-3 transition-all duration-200 select-none ${
+                hasAnyInsurance
+                  ? "border-emerald-500/60 bg-emerald-950/30 text-emerald-100 ring-1 ring-emerald-500/40"
+                  : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 text-zinc-300"
+              }`}
+            >
+              <div className="flex items-start gap-2.5">
+                <div
+                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                    hasAnyInsurance
+                      ? "bg-emerald-500 border-emerald-500 text-black"
+                      : "border-zinc-600 bg-zinc-800"
+                  }`}
+                >
+                  {hasAnyInsurance && <Check className="h-3 w-3 stroke-[3]" />}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold flex items-center gap-1.5 text-white">
+                      <Shield className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>Avail Fly Care Insurance</span>
+                    </span>
+                    <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded uppercase">
+                      {hasAnyInsurance ? "Active" : "Optional"}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[10px] text-zinc-400 leading-tight">
+                    Instant crash and accidental damage cover across all airframes in bag.
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <Link
               href="/checkout"

@@ -14,7 +14,7 @@ import { useUserSession } from "@/lib/auth-client";
 export default function CheckoutPage() {
   const router = useRouter();
   const session = useUserSession();
-  const { items, getTotalPaise, clearCart } = useCartStore();
+  const { items, getTotalPaise, clearCart, setAllInsurance } = useCartStore();
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -287,12 +287,21 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Fly Care Premium Insurance Registration Form */}
-              {hasAnyInsurance && (
+              {/* Fly Care Premium Insurance Registration Form / Toggle */}
+              {hasAnyInsurance ? (
                 <div className="rounded-3xl border border-emerald-300 bg-emerald-50/60 p-6 sm:p-8 shadow-md">
-                  <div className="flex items-center gap-2 border-b border-emerald-200 pb-4 text-sm font-bold text-emerald-950">
-                    <Shield className="h-4 w-4 text-emerald-700" />
-                    <span>Fly Care Premium • Policyholder Registration</span>
+                  <div className="flex items-center justify-between border-b border-emerald-200 pb-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-emerald-950">
+                      <Shield className="h-4 w-4 text-emerald-700" />
+                      <span>Fly Care Premium • Policyholder Registration</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAllInsurance(false)}
+                      className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 underline cursor-pointer"
+                    >
+                      Remove Insurance
+                    </button>
                   </div>
                   <p className="mt-2 text-xs text-emerald-800 leading-relaxed">
                     You selected <strong className="font-bold">Fly Care Premium</strong> insurance for your flight system. Please enter the pilot / organization details for official policy issuance and damage replacement warranty.
@@ -354,6 +363,30 @@ export default function CheckoutPage() {
                         onChange={(e) => setNomineeName(e.target.value)}
                         className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-xs text-zinc-900 focus:border-black focus:outline-none shadow-xs"
                       />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => setAllInsurance(true)}
+                  className="cursor-pointer rounded-3xl border border-zinc-200 bg-zinc-50/80 hover:border-zinc-300 hover:bg-zinc-100/70 p-6 transition select-none shadow-xs"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-zinc-400 bg-white">
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
+                          <Shield className="h-4 w-4 text-emerald-600" />
+                          <span>Avail Fly Care Aviation Insurance</span>
+                        </span>
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          Optional Cover
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-600 leading-relaxed">
+                        Protect your aircraft against crashes, water damage, and accidental loss with official DGCA policy coverage. Click to add.
+                      </p>
                     </div>
                   </div>
                 </div>

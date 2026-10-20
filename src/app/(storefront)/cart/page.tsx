@@ -12,7 +12,9 @@ import {
   ShieldCheck, 
   Truck, 
   Zap,
-  ArrowLeft
+  ArrowLeft,
+  Check,
+  Shield,
 } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { formatINR } from "@/lib/utils";
@@ -28,6 +30,7 @@ export default function CartPage() {
   const items = mounted ? store.items : [];
   const totalPaise = mounted ? store.getTotalPaise() : 0;
   const itemCount = mounted ? store.getItemCount() : 0;
+  const hasAnyInsurance = items.some((i) => i.hasInsurance);
 
   return (
     <div className="min-h-screen bg-white text-zinc-900 py-10 sm:py-14">
@@ -117,6 +120,12 @@ export default function CartPage() {
                             {item.isSecondHand && (
                               <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-800 uppercase">
                                 Verified Pre-Owned
+                              </span>
+                            )}
+                            {item.hasInsurance && (
+                              <span className="rounded-full bg-emerald-50 border border-emerald-300 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-800 uppercase flex items-center gap-1">
+                                <Shield className="h-3 w-3 text-emerald-600" />
+                                <span>Fly Care Insured</span>
                               </span>
                             )}
                             <span className="text-[10px] font-mono text-zinc-400">
@@ -234,6 +243,42 @@ export default function CartPage() {
                     </div>
                     <div className="text-2xl font-black text-black">
                       {formatINR(totalPaise)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Avail Fly Care Insurance Option */}
+                <div
+                  onClick={() => store.setAllInsurance(!hasAnyInsurance)}
+                  className={`cursor-pointer rounded-2xl border p-4 transition-all duration-200 select-none ${
+                    hasAnyInsurance
+                      ? "border-emerald-500 bg-emerald-50/80 shadow-xs ring-1 ring-emerald-500"
+                      : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                        hasAnyInsurance
+                          ? "bg-emerald-600 border-emerald-600 text-white"
+                          : "border-zinc-300 bg-white"
+                      }`}
+                    >
+                      {hasAnyInsurance && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs font-bold text-black flex items-center gap-1.5">
+                          <Shield className="h-4 w-4 text-emerald-600" />
+                          <span>Avail Fly Care Insurance</span>
+                        </span>
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          {hasAnyInsurance ? "Active" : "Optional"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-relaxed text-zinc-600">
+                        DGCA pilot liability, accidental crash, and fast hardware replacement cover.
+                      </p>
                     </div>
                   </div>
                 </div>

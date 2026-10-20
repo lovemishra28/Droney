@@ -17,6 +17,25 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
 
+  // Auto-redirect authenticated admin to /admin when loading root URL (/)
+  // UNLESS explicitly viewing the live storefront with ?live=true
+  if (pathname === "/") {
+    const isLivePreview = request.nextUrl.searchParams.get("live") === "true";
+    if (!isLivePreview && sessionCookie) {
+      try {
+        const secretKey = getEncryptionKey();
+        const { payload } = await jwtDecrypt(sessionCookie, secretKey, {
+          clockTolerance: 15,
+        });
+        if (payload?.role === "admin") {
+          return NextResponse.redirect(new URL("/admin", request.url));
+        }
+      } catch {
+        // Ignore invalid session token and proceed as guest
+      }
+    }
+  }
+
   // Guard all administrative portal routes (/admin and /admin/*)
   if (pathname.startsWith("/admin")) {
     if (!sessionCookie) {

@@ -1,7 +1,5 @@
 import React from "react";
-import Link from "next/link";
 import { desc } from "drizzle-orm";
-import { Plus } from "lucide-react";
 import { db } from "@/lib/db";
 import { products } from "@/lib/db/schema";
 import { requireAdminSession } from "@/server/queries/admin";
@@ -96,14 +94,6 @@ export default async function AdminProductsPage() {
 
         <div className="flex items-center gap-3">
           <DeleteAllProductsButton totalProducts={formattedRows.length} />
-
-          <Link
-            href="/admin/products/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-black dark:bg-[#c8f33b] px-4 py-2.5 text-xs font-bold text-white dark:text-black transition-all hover:opacity-90 dark:hover:bg-[#b5e028] shadow-xs"
-          >
-            <Plus className="h-4 w-4 stroke-[3]" />
-            <span>Add New Product</span>
-          </Link>
         </div>
       </div>
 

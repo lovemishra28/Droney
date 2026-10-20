@@ -112,7 +112,7 @@ export function AdminTopbar({
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {/* View Live Storefront Link */}
           <Link
-            href="/"
+            href="/?live=true"
             target="_blank"
             className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900"
           >

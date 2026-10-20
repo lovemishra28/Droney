@@ -141,8 +141,17 @@ export function AdminNavStrip({ pendingApprovalsCount = 0 }: AdminNavStripProps)
           })}
         </div>
 
-        {/* Right Action: Create New Product CTA Button */}
+        {/* Right Actions: Bulk CSV Ingest + Create New Product CTA Button */}
         <div className="flex items-center gap-2 shrink-0 pl-2">
+          <Link
+            href="/admin/import"
+            className="hidden sm:flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-200 transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white shadow-xs active:scale-95 shrink-0"
+            title="Bulk CSV Ingest"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
+            <span>Bulk CSV Ingest</span>
+          </Link>
+
           <Link
             href="/admin/products/new"
             className="flex items-center gap-1.5 rounded-xl bg-[#c8f33b] hover:bg-[#b5e028] px-3.5 py-2 text-xs font-black text-black transition-all shadow-xs active:scale-95 shrink-0 hover:shadow-[0_0_15px_rgba(200,243,59,0.25)]"

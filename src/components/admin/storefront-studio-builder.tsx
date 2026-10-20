@@ -263,16 +263,6 @@ export function StorefrontStudioBuilder({
 
         {/* Global Action Buttons */}
         <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            target="_blank"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-200 transition"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            <span>View Live Site</span>
-            <ExternalLink className="h-3 w-3 opacity-60" />
-          </Link>
-
           <button
             type="button"
             disabled={isPending}

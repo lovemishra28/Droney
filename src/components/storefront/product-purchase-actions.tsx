@@ -35,6 +35,7 @@ export function ProductPurchaseActions({
   product,
 }: ProductPurchaseActionsProps) {
   const [quantity, setQuantity] = useState(1);
+  const [withInsurance, setWithInsurance] = useState(false);
   const [addedToast, setAddedToast] = useState(false);
   const [restrictionError, setRestrictionError] = useState<string | null>(null);
   const router = useRouter();
@@ -79,7 +80,7 @@ export function ProductPurchaseActions({
       isSecondHand: product.isSecondHand,
       quantity,
       stockAvailable: product.stockQuantity,
-      hasInsurance: false,
+      hasInsurance: withInsurance,
     });
 
     setAddedToast(true);
@@ -114,7 +115,7 @@ export function ProductPurchaseActions({
       isSecondHand: product.isSecondHand,
       quantity,
       stockAvailable: product.stockQuantity,
-      hasInsurance: false,
+      hasInsurance: withInsurance,
     });
 
     router.push("/checkout");
@@ -154,6 +155,44 @@ export function ProductPurchaseActions({
               Save {discountPercent}%
             </span>
           )}
+        </div>
+      </div>
+
+      {/* Avail Fly Care Aviation Insurance Checkmark Card */}
+      <div
+        onClick={() => setWithInsurance(!withInsurance)}
+        className={`cursor-pointer rounded-2xl border p-3.5 sm:p-4 transition-all duration-200 select-none ${
+          withInsurance
+            ? "border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/20 shadow-xs ring-1 ring-emerald-500"
+            : "border-zinc-200 bg-zinc-50/70 hover:border-zinc-300 hover:bg-zinc-100/60"
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          <div
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+              withInsurance
+                ? "bg-emerald-600 border-emerald-600 text-white"
+                : "border-zinc-400 bg-white"
+            }`}
+          >
+            {withInsurance && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+          </div>
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center justify-between gap-1">
+              <div className="flex items-center gap-1.5">
+                <Shield className="h-4 w-4 text-emerald-600" />
+                <span className="text-xs sm:text-sm font-bold text-zinc-900">
+                  Avail Fly Care Aviation Insurance
+                </span>
+              </div>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                {withInsurance ? "Active on Flight" : "Optional Cover"}
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-zinc-600">
+              Covers crash damage, water intrusion, component loss, and fast-track DGCA replacement.
+            </p>
+          </div>
         </div>
       </div>
 

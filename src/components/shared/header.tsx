@@ -112,7 +112,10 @@ export function Header({ initialNavProducts = [] }: HeaderProps) {
           {/* Left: Brand Logo & Boxy In-Place Search Bar */}
           <div className="flex min-w-0 flex-1 items-center gap-5 sm:gap-7">
             {/* Robotic Tech Logo without green dot */}
-            <Link href="/" className="inline-flex items-center select-none group shrink-0 py-1">
+            <Link
+              href={session.role === "admin" ? "/?live=true" : "/"}
+              className="inline-flex items-center select-none group shrink-0 py-1"
+            >
               <span className="font-tech text-2xl sm:text-[27px] font-bold tracking-[0.05em] text-black leading-none uppercase">
                 ALTITUDE
               </span>
@@ -224,12 +227,12 @@ export function Header({ initialNavProducts = [] }: HeaderProps) {
             {/* User Session Condition: Create Account if not logged in; User Name + Icon if logged in */}
             {session.isAuthenticated ? (
               <Link
-                href="/account"
+                href={session.role === "admin" ? "/admin" : "/account"}
                 className="flex items-center gap-1.5 text-zinc-800 hover:text-black transition"
                 aria-label="Pilot Account Profile"
               >
                 <span className="text-xs font-semibold text-zinc-800 max-w-[120px] truncate hidden sm:inline">
-                  {session.fullName || "Pilot"}
+                  {session.role === "admin" ? "Admin Panel" : session.fullName || "Pilot"}
                 </span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-700 hover:bg-zinc-100 transition">
                   <User className="h-4 w-4" />
