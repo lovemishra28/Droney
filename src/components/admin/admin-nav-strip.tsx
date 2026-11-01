@@ -11,11 +11,13 @@ import {
   FileSpreadsheet,
   ShoppingBag,
   History,
+  Headphones,
   Plus,
 } from "lucide-react";
 
 interface AdminNavStripProps {
   pendingApprovalsCount?: number;
+  pendingInquiriesCount?: number;
 }
 
 const NAV_ITEMS = [
@@ -56,6 +58,12 @@ const NAV_ITEMS = [
     badge: null,
   },
   {
+    href: "/admin/inquiries",
+    label: "Pilot Consultations",
+    icon: Headphones,
+    badgeKey: "inquiries",
+  },
+  {
     href: "/admin/audit",
     label: "Audit Trail Logs",
     icon: History,
@@ -63,7 +71,10 @@ const NAV_ITEMS = [
   },
 ];
 
-export function AdminNavStrip({ pendingApprovalsCount = 0 }: AdminNavStripProps) {
+export function AdminNavStrip({
+  pendingApprovalsCount = 0,
+  pendingInquiriesCount = 0,
+}: AdminNavStripProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
@@ -82,8 +93,13 @@ export function AdminNavStrip({ pendingApprovalsCount = 0 }: AdminNavStripProps)
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
-            const hasPendingBadge =
-              item.badgeKey === "payments" && pendingApprovalsCount > 0;
+            const badgeCount =
+              item.badgeKey === "payments"
+                ? pendingApprovalsCount
+                : item.badgeKey === "inquiries"
+                ? pendingInquiriesCount
+                : 0;
+            const hasPendingBadge = badgeCount > 0;
 
             if (active) {
               return (
@@ -103,7 +119,7 @@ export function AdminNavStrip({ pendingApprovalsCount = 0 }: AdminNavStripProps)
                   )}
                   {hasPendingBadge && (
                     <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-1.5 font-mono text-[9px] font-black text-[#c8f33b]">
-                      {pendingApprovalsCount}
+                      {badgeCount}
                     </span>
                   )}
                 </Link>
@@ -132,8 +148,8 @@ export function AdminNavStrip({ pendingApprovalsCount = 0 }: AdminNavStripProps)
 
                 {/* Pending Notification Dot or Badge */}
                 {hasPendingBadge && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 font-mono text-[9px] font-black text-black shadow-xs">
-                    {pendingApprovalsCount}
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c8f33b] px-1 font-mono text-[9px] font-black text-black shadow-xs">
+                    {badgeCount}
                   </span>
                 )}
               </Link>

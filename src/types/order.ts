@@ -9,6 +9,16 @@ export type PaymentStatus =
   | "paid"
   | "rejected";
 
+export const COURIER_PARTNERS = [
+  "Delhivery",
+  "Blue Dart",
+  "DTDC",
+  "Xpressbees",
+  "India Post Speed Post",
+] as const;
+
+export type CourierPartner = (typeof COURIER_PARTNERS)[number];
+
 export interface CheckoutInput {
   items: Array<{
     productId: string;

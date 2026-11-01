@@ -1,13 +1,30 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { inquiries } from "@/lib/db/schema";
 import type { ActionResponse } from "@/server/actions/auth";
 
+function sanitizeAndFormatPhone(phone: string): string {
+  const trimmed = phone.trim();
+  const digitsOnly = trimmed.replace(/\D/g, "");
+  
+  if (trimmed.startsWith("+")) {
+    return `+${digitsOnly}`;
+  }
+  if (digitsOnly.length === 10) {
+    return `+91 ${digitsOnly}`;
+  }
+  if (digitsOnly.length === 12 && digitsOnly.startsWith("91")) {
+    return `+91 ${digitsOnly.slice(2)}`;
+  }
+  return trimmed;
+}
+
 const consultationSchema = z.object({
   fullName: z.string().trim().min(2, "Full name must be at least 2 characters").max(100),
-  phone: z.string().trim().min(10, "Phone number must be at least 10 digits").max(20),
+  phone: z.string().trim().min(8, "Phone number must be at least 8 digits").max(25),
   topic: z.string().max(50),
   pilotLevel: z.string().max(50),
   droneModel: z.string().max(100).optional(),
@@ -16,7 +33,7 @@ const consultationSchema = z.object({
 
 const tradeInSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
-  phone: z.string().trim().min(10, "Phone number must be at least 10 digits").max(20),
+  phone: z.string().trim().min(8, "Phone number must be at least 8 digits").max(25),
   city: z.string().max(50),
   pincode: z.string().max(10),
   droneModel: z.string().max(100),
@@ -28,7 +45,7 @@ const tradeInSchema = z.object({
 
 const customBuildSchema = z.object({
   fullName: z.string().trim().min(2, "Name is required").max(100).optional(),
-  phone: z.string().trim().min(10, "Phone is required").max(20).optional(),
+  phone: z.string().trim().min(8, "Phone is required").max(25).optional(),
   email: z.string().trim().email().optional(),
   frameName: z.string(),
   motorsName: z.string(),
@@ -50,17 +67,31 @@ export async function submitConsultationAction(
   }
 
   const { fullName, phone, topic, pilotLevel, droneModel, notes } = parsed.data;
+  const formattedPhone = sanitizeAndFormatPhone(phone);
 
   try {
     const [created] = await db
       .insert(inquiries)
       .values({
         type: "consultation",
-        fullName,
-        phone,
-        payload: { topic, pilotLevel, droneModel, notes },
+        fullName: fullName.trim(),
+        phone: formattedPhone,
+        payload: {
+          topic: topic || "fpv-tuning",
+          pilotLevel: pilotLevel || "intermediate",
+          droneModel: droneModel?.trim() || null,
+          notes: notes?.trim() || null,
+        },
+        status: "new",
       })
       .returning({ id: inquiries.id });
+
+    try {
+      revalidatePath("/admin/inquiries");
+      revalidatePath("/admin");
+    } catch {
+      // Revalidation during non-request contexts safely ignored
+    }
 
     return {
       success: true,
@@ -71,7 +102,7 @@ export async function submitConsultationAction(
     console.error("[Consultation Error]:", err);
     return {
       success: false,
-      message: "Unable to record consultation request at this time.",
+      message: "Unable to record consultation request at this time. Please retry.",
     };
   }
 }
@@ -99,24 +130,34 @@ export async function submitTradeInAction(
     estimatedValuationInr,
   } = parsed.data;
 
+  const formattedPhone = sanitizeAndFormatPhone(phone);
+
   try {
     const [created] = await db
       .insert(inquiries)
       .values({
         type: "trade_in",
-        fullName: name,
-        phone,
+        fullName: name.trim(),
+        phone: formattedPhone,
         payload: {
-          city,
-          pincode,
-          droneModel,
+          city: city.trim(),
+          pincode: pincode.trim(),
+          droneModel: droneModel.trim(),
           condition,
           batteryCount,
           hasRcWithScreen,
           estimatedValuationInr,
         },
+        status: "new",
       })
       .returning({ id: inquiries.id });
+
+    try {
+      revalidatePath("/admin/inquiries");
+      revalidatePath("/admin");
+    } catch {
+      // Revalidation during non-request contexts safely ignored
+    }
 
     return {
       success: true,
@@ -171,8 +212,16 @@ export async function submitCustomBuildAction(
           totalPricePaise,
           totalWeightGrams,
         },
+        status: "new",
       })
       .returning({ id: inquiries.id });
+
+    try {
+      revalidatePath("/admin/inquiries");
+      revalidatePath("/admin");
+    } catch {
+      // Revalidation during non-request contexts safely ignored
+    }
 
     return {
       success: true,
@@ -187,3 +236,4 @@ export async function submitCustomBuildAction(
     };
   }
 }
+

@@ -1,7 +1,7 @@
-import { and, count, desc, eq, isNotNull, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, isNotNull, lte, ne, or, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { auditLogs, orders, products, users } from "@/lib/db/schema";
+import { auditLogs, inquiries, orders, products, users } from "@/lib/db/schema";
 import { getCurrentSession } from "@/server/services/session";
 
 /**
@@ -33,6 +33,9 @@ export interface AdminMetricsSummary {
   pendingPaymentApprovalsCount: number;
   activeSkuCount: number;
   lowStockSkuCount: number;
+  pendingInquiriesCount: number;
+  pendingConsultationsCount: number;
+  totalInquiriesCount: number;
   recentOrders: Array<{
     id: string;
     orderReference: string;
@@ -91,7 +94,26 @@ export async function getAdminOverviewMetrics(): Promise<AdminMetricsSummary> {
 
     const lowStockSkuCount = lowStockResult[0]?.total ?? 0;
 
-    // 5. Recent 6 Orders
+    // 5. Inquiries Telemetry (Focus on Pilot Consultations)
+    const [
+      pendingConsultationsResult,
+      totalConsultationsResult,
+    ] = await Promise.all([
+      db
+        .select({ total: count() })
+        .from(inquiries)
+        .where(and(eq(inquiries.type, "consultation"), eq(inquiries.status, "new"))),
+      db
+        .select({ total: count() })
+        .from(inquiries)
+        .where(eq(inquiries.type, "consultation")),
+    ]);
+
+    const pendingConsultationsCount = pendingConsultationsResult[0]?.total ?? 0;
+    const totalInquiriesCount = totalConsultationsResult[0]?.total ?? 0;
+    const pendingInquiriesCount = pendingConsultationsCount;
+
+    // 6. Recent 6 Orders
     const rawOrders = await db.query.orders.findMany({
       where: isNotNull(orders.upiTransactionId),
       orderBy: [desc(orders.createdAt)],
@@ -123,6 +145,9 @@ export async function getAdminOverviewMetrics(): Promise<AdminMetricsSummary> {
       pendingPaymentApprovalsCount,
       activeSkuCount,
       lowStockSkuCount,
+      pendingInquiriesCount,
+      pendingConsultationsCount,
+      totalInquiriesCount,
       recentOrders,
     };
   } catch (error) {
@@ -132,8 +157,79 @@ export async function getAdminOverviewMetrics(): Promise<AdminMetricsSummary> {
       pendingPaymentApprovalsCount: 0,
       activeSkuCount: 0,
       lowStockSkuCount: 0,
+      pendingInquiriesCount: 0,
+      pendingConsultationsCount: 0,
+      totalInquiriesCount: 0,
       recentOrders: [],
     };
+  }
+}
+
+export interface AdminInquiryRecord {
+  id: string;
+  type: string;
+  fullName: string | null;
+  email: string | null;
+  phone: string | null;
+  payload: Record<string, unknown> | null;
+  status: string;
+  createdAt: Date;
+}
+
+/**
+ * Retrieves customer pilot consultation and custom build inquiries with filters and search.
+ */
+export async function getAdminInquiries(filters?: {
+  type?: string;
+  status?: string;
+  search?: string;
+}): Promise<AdminInquiryRecord[]> {
+  await requireAdminSession();
+
+  try {
+    const conditions = [ne(inquiries.type, "trade_in")];
+
+    if (filters?.type && filters.type !== "all") {
+      conditions.push(eq(inquiries.type, filters.type));
+    }
+
+    if (filters?.status && filters.status !== "all") {
+      conditions.push(eq(inquiries.status, filters.status));
+    }
+
+    if (filters?.search && filters.search.trim().length > 0) {
+      const term = `%${filters.search.trim()}%`;
+      const searchMatch = or(
+        ilike(inquiries.fullName, term),
+        ilike(inquiries.phone, term),
+        ilike(inquiries.email, term)
+      );
+      if (searchMatch) {
+        conditions.push(searchMatch);
+      }
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const rows = await db
+      .select()
+      .from(inquiries)
+      .where(whereClause)
+      .orderBy(desc(inquiries.createdAt));
+
+    return rows.map((r) => ({
+      id: r.id,
+      type: r.type,
+      fullName: r.fullName,
+      email: r.email,
+      phone: r.phone,
+      payload: (r.payload as Record<string, unknown>) || {},
+      status: r.status,
+      createdAt: r.createdAt,
+    }));
+  } catch (error) {
+    console.error("[Admin Inquiries Query Error]:", error);
+    return [];
   }
 }
 
@@ -152,3 +248,4 @@ export async function getRecentAuditLogs(limit: number = 50) {
     return [];
   }
 }
+

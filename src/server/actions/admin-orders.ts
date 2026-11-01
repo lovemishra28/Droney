@@ -9,16 +9,9 @@ import { requireAdminSession } from "@/server/queries/admin";
 import { sendOrderAlertSms } from "@/lib/sms";
 import { sendTransactionalEmail } from "@/lib/email";
 import type { ActionResponse } from "@/server/actions/auth";
+import { COURIER_PARTNERS } from "@/types/order";
 
 const purge = revalidateTag as (tag: string, profile?: any) => void;
-
-export const COURIER_PARTNERS = [
-  "Delhivery",
-  "Blue Dart",
-  "DTDC",
-  "Xpressbees",
-  "India Post Speed Post",
-] as const;
 
 const updateFulfillmentSchema = z.object({
   orderId: z.string().uuid("Invalid order ID"),

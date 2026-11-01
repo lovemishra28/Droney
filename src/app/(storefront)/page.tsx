@@ -20,7 +20,7 @@ export default async function StorefrontHomePage() {
     await Promise.all([
       getProducts({ pageSize: 50, sortBy: "newest" }).catch(() => ({ data: [] })),
       getLatestModifiedNewArrivals(4),
-      getLatestModifiedPreOwned(2),
+      getLatestModifiedPreOwned(3),
       getAllStorefrontConfigs(),
     ]);
 

@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Clock,
+  Headphones,
   IndianRupee,
   Package,
   ShoppingBag,
@@ -17,8 +18,37 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
+      {/* Flight Desk Live Inquiries Alert Banner */}
+      {metrics.pendingConsultationsCount > 0 && (
+        <div className="relative overflow-hidden rounded-2xl border border-lime-400/50 dark:border-[#c8f33b]/30 bg-lime-50/80 dark:bg-zinc-900/60 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#c8f33b] text-black shadow-xs">
+              <Headphones className="h-5 w-5 text-black" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono font-black text-lime-900 dark:text-[#c8f33b] uppercase tracking-wider">
+                  Attention Flight Desk · Pending Pilot Callbacks
+                </span>
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
+                {metrics.pendingConsultationsCount} Pilot Consultation{metrics.pendingConsultationsCount === 1 ? "" : "s"} awaiting certified flight specialist outreach.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin/inquiries"
+            className="inline-flex items-center gap-2 rounded-xl bg-black dark:bg-[#c8f33b] px-4 py-2.5 text-xs font-black text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-[#b8e530] transition shadow-xs shrink-0"
+          >
+            <span>Review Consultations</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* Metric Telemetry Cards Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {/* Total Verified Revenue */}
         <div className="relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-5 shadow-xs transition-colors">
           <div className="flex items-center justify-between text-xs font-mono text-zinc-500 dark:text-zinc-400">
@@ -32,7 +62,7 @@ export default async function AdminOverviewPage() {
           </p>
           <div className="mt-2 flex items-center gap-1.5 text-[11px] text-zinc-500">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-            <span>Direct bank transfer (0% Gateway fees)</span>
+            <span>Direct bank transfer (0% fee)</span>
           </div>
         </div>
 
@@ -42,7 +72,7 @@ export default async function AdminOverviewPage() {
           className="group relative overflow-hidden rounded-2xl border border-amber-300 dark:border-amber-500/40 bg-amber-50/40 dark:bg-zinc-900/50 p-5 transition-all hover:border-amber-500 hover:shadow-xs"
         >
           <div className="flex items-center justify-between text-xs font-mono text-amber-700 dark:text-amber-300">
-            <span className="font-bold uppercase tracking-wider">Pending UPI Approvals</span>
+            <span className="font-bold uppercase tracking-wider">Pending UPI</span>
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-400/20 border border-amber-400/30">
               <Clock className="h-3.5 w-3.5 animate-pulse text-amber-600 dark:text-amber-300" />
             </div>
@@ -52,6 +82,26 @@ export default async function AdminOverviewPage() {
           </p>
           <div className="mt-2 flex items-center justify-between text-[11px] text-amber-700 dark:text-amber-400 font-medium">
             <span>Verify UTR bank settlement</span>
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+          </div>
+        </Link>
+
+        {/* Pilot Consultations */}
+        <Link
+          href="/admin/inquiries"
+          className="group relative overflow-hidden rounded-2xl border border-lime-300 dark:border-[#c8f33b]/40 bg-lime-50/30 dark:bg-zinc-900/50 p-5 transition-all hover:border-lime-500 dark:hover:border-[#c8f33b] hover:shadow-xs"
+        >
+          <div className="flex items-center justify-between text-xs font-mono text-lime-800 dark:text-[#c8f33b]">
+            <span className="font-bold uppercase tracking-wider">Pilot Consultations</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-lime-400/20 border border-lime-400/30">
+              <Headphones className="h-3.5 w-3.5 text-lime-700 dark:text-[#c8f33b]" />
+            </div>
+          </div>
+          <p className="mt-3 text-2xl font-black tracking-tight text-zinc-900 dark:text-white font-mono">
+            {metrics.pendingConsultationsCount} Pending
+          </p>
+          <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">
+            <span>1-on-1 Certified Pilot Sessions</span>
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
           </div>
         </Link>
@@ -90,7 +140,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* Priority Workflow Action Strips */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           href="/admin/payments"
           className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/30 hover:bg-zinc-50 dark:hover:bg-zinc-900/70 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group shadow-xs"
@@ -104,6 +154,23 @@ export default async function AdminOverviewPage() {
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
               Inspect 12-digit UTR codes against ICICI / HDFC statement.
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/inquiries"
+          className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/30 hover:bg-zinc-50 dark:hover:bg-zinc-900/70 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group shadow-xs"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-lime-500/10 border border-lime-500/20 text-lime-700 dark:text-[#c8f33b] group-hover:scale-105 transition-transform">
+            <Headphones className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-zinc-900 dark:text-white group-hover:text-lime-700 dark:group-hover:text-[#c8f33b] transition-colors">
+              Pilot Consultations Desk
+            </h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              One-click WhatsApp callback and flight tuning consultation.
             </p>
           </div>
         </Link>

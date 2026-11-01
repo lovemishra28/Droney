@@ -264,7 +264,7 @@ export function CategoryNav({ initialProducts = [] }: CategoryNavProps) {
               : [
                   { label: "Refurbished DJI Mini 3 Pro (Grade A+)", href: "/used-drones", badge: "GRADE A+", badgeColor: "emerald" },
                   { label: "DJI Air 2S Combo (Grade A)", href: "/used-drones", badge: "GRADE A", badgeColor: "amber" },
-                  { label: "Trade-In Your Drone", href: "/trade-in" },
+                  { label: "Bench Certified Aircraft", href: "/used-drones" },
                   { label: "Request Specific Model", href: "/consult-pilot" },
                 ],
         },
@@ -273,7 +273,7 @@ export function CategoryNav({ initialProducts = [] }: CategoryNavProps) {
           links: [
             { label: "7-Day Easy Return Policy", href: "/returns" },
             { label: "6-Month Altitude Warranty", href: "/used-drones", badge: "PROTECT", badgeColor: "lime" },
-            { label: "Doorstep Pickup Trade-In", href: "/trade-in" },
+            { label: "100% Tested Flight Batteries", href: "/used-drones" },
             { label: "Original DGCA Flight Log Transfer", href: "/consult-pilot" },
           ],
         },

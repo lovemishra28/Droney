@@ -379,9 +379,9 @@ export async function getLatestModifiedNewArrivals(limitCount = 4) {
 }
 
 /**
- * Retrieves the latest 2 modified certified pre-owned drones for the homepage showcase.
+ * Retrieves the latest 3 modified certified pre-owned drones for the homepage showcase.
  */
-export async function getLatestModifiedPreOwned(limitCount = 2) {
+export async function getLatestModifiedPreOwned(limitCount = 3) {
   try {
     return await db.query.products.findMany({
       where: and(

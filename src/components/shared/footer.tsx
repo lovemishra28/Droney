@@ -139,8 +139,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/trade-in" className="hover:text-white transition">
-                  Trade-In Your Gear
+                <Link href="/used-drones" className="hover:text-white transition">
+                  Pre-Owned Fleet &amp; Refurbished
                 </Link>
               </li>
               <li>

@@ -8,10 +8,8 @@ import {
   Truck,
 } from "lucide-react";
 import { formatINR } from "@/lib/utils";
-import {
-  COURIER_PARTNERS,
-  updateOrderFulfillmentAction,
-} from "@/server/actions/admin-orders";
+import { updateOrderFulfillmentAction } from "@/server/actions/admin-orders";
+import { COURIER_PARTNERS } from "@/types/order";
 import { GstInvoiceModal, type InvoiceData } from "@/components/admin/gst-invoice-modal";
 
 export interface AdminOrderRecord {

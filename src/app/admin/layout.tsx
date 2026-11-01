@@ -5,7 +5,7 @@ import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { AdminNavStrip } from "@/components/admin/admin-nav-strip";
 import { AdminThemeProvider } from "@/components/admin/admin-theme-provider";
 import { db } from "@/lib/db";
-import { orders } from "@/lib/db/schema";
+import { inquiries, orders } from "@/lib/db/schema";
 import { and, count, eq, isNotNull } from "drizzle-orm";
 
 export default async function AdminLayout({
@@ -15,20 +15,28 @@ export default async function AdminLayout({
 }) {
   const session = await requireAdminSession();
 
-  // Query pending payments count for live notification badge
+  // Query pending payments and inquiries count for live notification badges
   let pendingApprovalsCount = 0;
+  let pendingInquiriesCount = 0;
   try {
-    const pendingApprovalsResult = await db
-      .select({ total: count() })
-      .from(orders)
-      .where(
-        and(
-          eq(orders.paymentStatus, "awaiting_verification"),
-          isNotNull(orders.upiTransactionId)
-        )
-      );
+    const [pendingApprovalsResult, pendingInquiriesResult] = await Promise.all([
+      db
+        .select({ total: count() })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.paymentStatus, "awaiting_verification"),
+            isNotNull(orders.upiTransactionId)
+          )
+        ),
+      db
+        .select({ total: count() })
+        .from(inquiries)
+        .where(eq(inquiries.status, "new")),
+    ]);
 
     pendingApprovalsCount = pendingApprovalsResult[0]?.total ?? 0;
+    pendingInquiriesCount = pendingInquiriesResult[0]?.total ?? 0;
   } catch (error) {
     console.error("[Admin Layout Count Error]:", error);
   }
@@ -42,7 +50,10 @@ export default async function AdminLayout({
         <AdminTopbar adminName={session.fullName || "Administrator"} />
 
         {/* Horizontal Navigation Strip Directly Under Header */}
-        <AdminNavStrip pendingApprovalsCount={pendingApprovalsCount} />
+        <AdminNavStrip
+          pendingApprovalsCount={pendingApprovalsCount}
+          pendingInquiriesCount={pendingInquiriesCount}
+        />
 
         {/* Main Content Area - Full Screen Width */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">

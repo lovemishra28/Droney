@@ -360,7 +360,7 @@ export function NewArrivalsAndPreOwnedSection({
         {/* ==================================================================== */}
         {/* PART 2: PRE-OWNED PILOT PROGRAM — EXACT MATCH TO SCREENSHOT 2       */}
         {/* 1. Top Wide Hero Banner                                             */}
-        {/* 2. Bottom Row: Two Latest Refurbished Units (or Empty Slots) + Trade-In */}
+        {/* 2. Bottom Row: Three Latest Refurbished Units (or Empty Slots)    */}
         {/* ==================================================================== */}
         <div className="space-y-6">
           {/* Top Hero Banner */}
@@ -424,7 +424,7 @@ export function NewArrivalsAndPreOwnedSection({
             );
           })()}
 
-          {/* Bottom 3 Cards Row: 2 Pre-Owned Slots + Trade-In Valuation Card */}
+          {/* Bottom 3 Cards Row: 3 Pre-Owned Refurbished Unit Slots */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Slot 1: First Pre-Owned Drone or Placeholder */}
             {preOwnedUnits[0] ? (
@@ -610,25 +610,97 @@ export function NewArrivalsAndPreOwnedSection({
               </div>
             )}
 
-            {/* Card 3: TRADE-IN VALUATION */}
-            <div className="flex flex-col justify-between rounded-2xl border border-zinc-800 bg-[#111111] p-6 sm:p-7 text-white shadow-md hover:border-zinc-700 transition">
-              <div className="flex-1 flex flex-col justify-center py-2">
-                <h4 className="text-2xl sm:text-3xl lg:text-[2rem] font-black text-white tracking-tight leading-[1.15]">
-                  Have a drone <br className="hidden sm:inline" />
-                  sitting idle?
-                </h4>
-              </div>
+            {/* Slot 3: Third Pre-Owned Drone or Placeholder */}
+            {preOwnedUnits[2] ? (
+              (() => {
+                const item = preOwnedUnits[2];
+                const grade = item.secondHandDetails?.cosmeticGrade || "A";
+                const batteryCycles = item.secondHandDetails?.batteryCycleCount;
+                const img = resolveImageUrl(item.media?.[0]?.url, item.name);
 
-              <div className="mt-6 border-t border-zinc-800/80 pt-4">
-                <Link
-                  href="/trade-in"
-                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#c8f33b] py-3 px-4 text-xs sm:text-sm font-bold text-black hover:bg-[#b8e530] transition active:scale-[0.99] shadow-md"
-                >
-                  <span>Get Valuation</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+                return (
+                  <div className="flex flex-col justify-between rounded-2xl border border-zinc-200/90 bg-white p-6 shadow-xs hover:border-zinc-300 hover:shadow-lg transition">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold text-emerald-700 uppercase tracking-wider">
+                          GRADE {grade} VERIFIED
+                        </span>
+                        <span className="text-[10px] font-mono text-zinc-500 font-medium">
+                          {batteryCycles ? `${batteryCycles} Charge Cycles` : "98% Battery Health"}
+                        </span>
+                      </div>
+
+                      <h4 className="mt-4 text-base font-bold text-black">
+                        {item.name}
+                      </h4>
+                      <p className="mt-1 text-xs text-zinc-500 leading-relaxed line-clamp-2">
+                        {item.description || "Bench certified pre-owned drone with verified flight telemetry and full test inspection."}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-between border-t border-zinc-100 pt-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-black text-black font-mono">
+                          {formatINR(item.basePricePaise)}
+                        </span>
+                        {item.showcase?.mrpPricePaise && (
+                          <span className="text-xs line-through text-zinc-400 font-mono">
+                            {formatINR(item.showcase.mrpPricePaise)}
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleAddToCart({
+                            id: item.id,
+                            name: item.name,
+                            slug: item.slug,
+                            pricePaise: item.basePricePaise,
+                            image: img,
+                            isSecondHand: true,
+                            stockAvailable: item.stockQuantity,
+                          })
+                        }
+                        className="rounded-full border border-zinc-200 bg-zinc-50 px-4 py-1.5 text-xs font-bold text-black shadow-xs hover:bg-zinc-100 transition active:scale-95 cursor-pointer"
+                      >
+                        Claim Unit
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              /* Empty Box 3 (Waiting for Admin to add refurbished product) */
+              <div className="flex flex-col justify-between rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/70 p-6 text-zinc-500 transition">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
+                      BENCH CERTIFIED
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-400">
+                      Telemetry Checked
+                    </span>
+                  </div>
+                  <h4 className="mt-4 text-base font-bold text-zinc-800">
+                    Awaiting Certified Aircraft
+                  </h4>
+                  <p className="mt-1 text-xs text-zinc-500 leading-relaxed">
+                    Pre-owned aircraft added by the administrator in the catalog will appear here automatically in real time.
+                  </p>
+                </div>
+                <div className="mt-6 flex items-center justify-between border-t border-zinc-200/80 pt-4">
+                  <span className="text-xs font-mono text-zinc-400">Next Slot</span>
+                  <Link
+                    href="/used-drones"
+                    className="rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-xs font-bold text-zinc-800 hover:bg-zinc-50 transition"
+                  >
+                    View All
+                  </Link>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
